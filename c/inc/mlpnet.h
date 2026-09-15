@@ -7,11 +7,11 @@ typedef struct {
 	float eta; // learning rate
 	float (*f)(float); // activation function
 	float (*df)(float); // derivative of the activation function
-	float* J; // Jacobian matrix
-	float** X; // inputs of all layers
-	float** Y; // outputs of all layers
-	float** W; // weights
-	float** B; // biases
+	float* J; // Jacobian matrix (arranged in row-major order)
+	float** X; // vectors of inputs of all layers
+	float** Y; // vectors of outputs of all layers
+	float** W; // matrices of weights (arranged in row-major order)
+	float** B; // vectors of biases
 	float** dW; // gradient of the loss function w.r.t. the weights
 	float** dB; // gradient of the loss function w.r.t. the biases
 } mlpnet; // Multilayer perceptron (MLP) neural network
@@ -28,7 +28,7 @@ int mlpnet_init(mlpnet* net, int nh, int* size);
 // Free the allocated memory.
 void mlpnet_free(mlpnet* net);
 // Evaluate the network at x. Return a pointer to
-// the vector of estimated outputs.
+// the vector of network outputs.
 float* mlpnet_eval(mlpnet* net, float* x);
 // Compute the gradient of the loss function w.r.t. the 
 // network parameters by backpropagation at (x, y), then 
@@ -36,7 +36,7 @@ float* mlpnet_eval(mlpnet* net, float* x);
 // Return the loss value computed before the update.
 float mlpnet_update(mlpnet* net, float* x, float* y);
 // Compute the Jacobian matrix at x. Return a pointer
-// to the Jacobian matrix arranged in row-major order. 
+// to the Jacobian matrix. 
 float* mlpnet_jaco(mlpnet* net, float* x);
 
 #endif

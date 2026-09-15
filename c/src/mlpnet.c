@@ -79,13 +79,6 @@ void mlpnet_free(mlpnet* net)
 	free(net->B);
 	free(net->dW);
 	free(net->dB);
-	net->J = 0;
-	net->X = 0;
-	net->Y = 0;
-	net->W = 0;
-	net->B = 0;
-	net->dW = 0;
-	net->dB = 0;
 }
 
 float* mlpnet_eval(mlpnet* net, float* x)
