@@ -19,50 +19,43 @@ static float randn(void)
 	float u1 = (float)rand() / (float)RAND_MAX;
 	float u2 = (float)rand() / (float)RAND_MAX;
 
-	return sqrtf(-2.0f * logf(u1)) * cosf(2.0f * 3.1415927f * u2);
+	return sqrtf(-2.0f * logf(u1)) * cosf(6.2831855f * u2);
 }
 
 int mlpnet_init(mlpnet* net, int nh, int* size)
 {
-	int i, k, size_max = size[0];
+	int i, k;
 
 	net->nh = nh;
 	net->eta = 1e-3f;
 	net->f = f_tanh;
 	net->df = df_tanh;
 	net->size = size;
+	net->J = calloc((size_t)size[0] * (size_t)size[nh + 1], sizeof(float));
 	net->X = calloc(((size_t)nh + 1), sizeof(float*));
 	net->Y = calloc(((size_t)nh + 1), sizeof(float*));
 	net->W = calloc(((size_t)nh + 1), sizeof(float*));
 	net->B = calloc(((size_t)nh + 1), sizeof(float*));
 	net->dW = calloc(((size_t)nh + 1), sizeof(float*));
 	net->dB = calloc(((size_t)nh + 1), sizeof(float*));
-	if (net->X == 0 || net->Y == 0 || net->W == 0 ||
-		net->B == 0 || net->dW == 0 || net->dB == 0) {
+	if (net->X == 0 || net->W == 0 || net->dW == 0 ||
+		net->Y == 0 || net->B == 0 || net->dB == 0 || net->J == 0) {
 		return -1;
 	}
 	for (k = 0; k <= nh; k++) {
-		if (size[k + 1] > size_max) {
-			size_max = size[k + 1];
-		}
 		net->X[k] = calloc((size_t)size[k], sizeof(float));
 		net->Y[k] = calloc((size_t)size[k + 1], sizeof(float));
 		net->W[k] = calloc((size_t)size[k] * (size_t)size[k + 1], sizeof(float));
 		net->B[k] = calloc((size_t)size[k + 1], sizeof(float));
 		net->dW[k] = calloc((size_t)size[k] * (size_t)size[k + 1], sizeof(float));
 		net->dB[k] = calloc((size_t)size[k + 1], sizeof(float));
-		if (net->X[k] == 0 || net->Y[k] == 0 || net->W[k] == 0 ||
-			net->B[k] == 0 || net->dW[k] == 0 || net->dB[k] == 0) {
+		if (net->X[k] == 0 || net->W[k] == 0 || net->dW[k] == 0 ||
+			net->Y[k] == 0 || net->B[k] == 0 || net->dB[k] == 0) {
 			return -1;
 		}
 		for (i = 0; i < size[k] * size[k + 1]; i++) {
 			net->W[k][i] = randn() / size[k];
 		}
-	}
-	net->J = calloc((size_t)size[0] * (size_t)size[nh + 1], sizeof(float));
-	net->work = calloc(size_max, sizeof(float));
-	if (net->J == 0 || net->work == 0) {
-		return -1;
 	}
 	return 0;
 }
@@ -86,7 +79,6 @@ void mlpnet_free(mlpnet* net)
 	free(net->B);
 	free(net->dW);
 	free(net->dB);
-	free(net->work);
 	net->J = 0;
 	net->X = 0;
 	net->Y = 0;
@@ -94,7 +86,6 @@ void mlpnet_free(mlpnet* net)
 	net->B = 0;
 	net->dW = 0;
 	net->dB = 0;
-	net->work = 0;
 }
 
 float* mlpnet_eval(mlpnet* net, float* x)
@@ -125,29 +116,25 @@ float* mlpnet_eval(mlpnet* net, float* x)
 float mlpnet_update(mlpnet* net, float* x, float* y)
 {
 	int i, j, k;
-	float loss = 0;
-	float* yh = mlpnet_eval(net, x);
+	float loss = 0, * yh = mlpnet_eval(net, x);
 
 	for (i = 0; i < net->size[net->nh + 1]; i++) {
-		net->work[i] = yh[i] - y[i];
-		loss += net->work[i] * net->work[i];
+		net->dB[net->nh][i] = yh[i] - y[i];
+		loss += net->dB[net->nh][i] * net->dB[net->nh][i];
 	}
 	loss *= 0.5f;
 	for (k = net->nh; k >= 0; k--) {
 		for (i = 0; i < net->size[k]; i++) {
 			for (j = 0; j < net->size[k + 1]; j++) {
-				net->dW[k][i * net->size[k + 1] + j] = net->work[j] * net->X[k][i];
+				net->dW[k][i * net->size[k + 1] + j] = net->dB[k][j] * net->X[k][i];
 			}
-		}
-		for (j = 0; j < net->size[k + 1]; j++) {
-			net->dB[k][j] = net->work[j];
 		}
 		if (k > 0) {
 			for (i = 0; i < net->size[k]; i++) {
-				for (net->work[i] = 0, j = 0; j < net->size[k + 1]; j++) {
-					net->work[i] += net->dB[k][j] * net->W[k][i * net->size[k + 1] + j];
+				for (net->dB[k - 1][i] = 0, j = 0; j < net->size[k + 1]; j++) {
+					net->dB[k - 1][i] += net->dB[k][j] * net->W[k][i * net->size[k + 1] + j];
 				}
-				net->work[i] *= net->df(net->Y[k - 1][i]);
+				net->dB[k - 1][i] *= net->df(net->Y[k - 1][i]);
 			}
 		}
 	}
@@ -173,13 +160,10 @@ float* mlpnet_jaco(mlpnet* net, float* x)
 		}
 		for (k = net->nh; k > 0; k--) {
 			for (i = 0; i < net->size[k]; i++) {
-				for (net->work[i] = 0, j = 0; j < net->size[k + 1]; j++) {
-					net->work[i] += net->dB[k][j] * net->W[k][i * net->size[k + 1] + j];
+				for (net->dB[k - 1][i] = 0, j = 0; j < net->size[k + 1]; j++) {
+					net->dB[k - 1][i] += net->dB[k][j] * net->W[k][i * net->size[k + 1] + j];
 				}
-				net->work[i] *= net->df(net->Y[k - 1][i]);
-			}
-			for (i = 0; i < net->size[k]; i++) {
-				net->dB[k - 1][i] = net->work[i];
+				net->dB[k - 1][i] *= net->df(net->Y[k - 1][i]);
 			}
 		}
 		for (i = 0; i < net->size[0]; i++) {

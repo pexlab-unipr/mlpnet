@@ -14,7 +14,6 @@ typedef struct {
 	float** B; // biases
 	float** dW; // gradient of the loss function w.r.t. the weights
 	float** dB; // gradient of the loss function w.r.t. the biases
-	float* work; // workspace memory
 } mlpnet; // Multilayer perceptron (MLP) neural network
 
 // Initialize an MLP network with nh hidden layers and 
