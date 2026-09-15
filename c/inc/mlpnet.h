@@ -12,7 +12,7 @@ typedef struct {
 	float** Y; // vectors of outputs of all layers
 	float** W; // matrices of weights (arranged in row-major order)
 	float** B; // vectors of biases
-	float** work; // workspace memory
+	float* work; // workspace memory
 } mlpnet; // Multilayer perceptron (MLP) neural network
 
 // Initialize an MLP network with nh hidden layers and 
