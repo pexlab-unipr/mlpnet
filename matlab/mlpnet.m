@@ -47,7 +47,7 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
             y = net.Y{end};
         end
 
-        function J = jaco(net,x)
+        function J = jacobian(net,x)
             % Compute the Jacobian matrix at x
             J = zeros(net.size(end),net.size(1));
             net.eval(x);

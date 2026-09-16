@@ -22,31 +22,23 @@ static float randn(void)
 	return sqrtf(-2.0f * logf(u1)) * cosf(6.2831855f * u2);
 }
 
-int mlpnet_init(mlpnet* net, int nh, int* size)
+int mlpnet_init(mlpnet* net, int nh, const int* size)
 {
-	int i, k, size_max[2] = { 0 };
+	int i, k, work_len = size[nh + 1];
 
 	net->nh = nh;
 	net->eta = 1e-3f;
 	net->f = f_tanh;
 	net->df = df_tanh;
 	net->size = size;
-	net->J = calloc((size_t)size[0] * (size_t)size[nh + 1], sizeof(float));
-	net->X = calloc(((size_t)nh + 1), sizeof(float*));
-	net->Y = calloc(((size_t)nh + 1), sizeof(float*));
-	net->W = calloc(((size_t)nh + 1), sizeof(float*));
-	net->B = calloc(((size_t)nh + 1), sizeof(float*));
-	if (net->J == 0 || net->X == 0 || net->Y == 0 || net->W == 0 || net->B == 0) {
+	net->X = calloc((size_t)nh + 1, sizeof(float*));
+	net->Y = calloc((size_t)nh + 1, sizeof(float*));
+	net->W = calloc((size_t)nh + 1, sizeof(float*));
+	net->B = calloc((size_t)nh + 1, sizeof(float*));
+	if (net->X == 0 || net->Y == 0 || net->W == 0 || net->B == 0) {
 		return -1;
 	}
 	for (k = 0; k <= nh; k++) {
-		if (size[k + 1] > size_max[0]) {
-			size_max[0] = size[k + 1];
-		}
-		if (size[k + 1] > size_max[1]) {
-			size_max[0] = size_max[1];
-			size_max[1] = size[k + 1];
-		}
 		net->X[k] = calloc((size_t)size[k], sizeof(float));
 		net->Y[k] = calloc((size_t)size[k + 1], sizeof(float));
 		net->W[k] = calloc((size_t)size[k] * (size_t)size[k + 1], sizeof(float));
@@ -57,8 +49,13 @@ int mlpnet_init(mlpnet* net, int nh, int* size)
 		for (i = 0; i < size[k] * size[k + 1]; i++) {
 			net->W[k][i] = randn() / size[k];
 		}
+		if (k > 0) {
+			if (size[k] + size[k + 1] > work_len) {
+				work_len = size[k] + size[k + 1];
+			}
+		}
 	}
-	net->work = calloc((size_t)size_max[0] + (size_t)size_max[1], sizeof(float*));
+	net->work = calloc(work_len, sizeof(float*));
 	if (net->work == 0) {
 		return -1;
 	}
@@ -75,7 +72,6 @@ void mlpnet_free(mlpnet* net)
 		free(net->W[k]);
 		free(net->B[k]);
 	}
-	free(net->J);
 	free(net->X);
 	free(net->Y);
 	free(net->W);
@@ -83,7 +79,7 @@ void mlpnet_free(mlpnet* net)
 	free(net->work);
 }
 
-float* mlpnet_eval(mlpnet* net, float* x)
+float* mlpnet_eval(mlpnet* net, const float* x)
 {
 	int i, j, k;
 
@@ -108,7 +104,7 @@ float* mlpnet_eval(mlpnet* net, float* x)
 	return net->Y[net->nh];
 }
 
-float mlpnet_update(mlpnet* net, float* x, float* y)
+float mlpnet_update(mlpnet* net, const float* x, const float* y)
 {
 	int i, j, k;
 	float loss = 0, * yh = mlpnet_eval(net, x);
@@ -117,7 +113,6 @@ float mlpnet_update(mlpnet* net, float* x, float* y)
 		net->work[i] = yh[i] - y[i];
 		loss += net->work[i] * net->work[i];
 	}
-	loss *= 0.5f;
 	for (k = net->nh; k >= 0; k--) {
 		if (k > 0) {
 			for (i = 0; i < net->size[k]; i++) {
@@ -141,10 +136,10 @@ float mlpnet_update(mlpnet* net, float* x, float* y)
 			}
 		}
 	}
-	return loss;
+	return 0.5f * loss;
 }
 
-float* mlpnet_jaco(mlpnet* net, float* x)
+void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 {
 	int i, j, k, o;
 
@@ -165,10 +160,9 @@ float* mlpnet_jaco(mlpnet* net, float* x)
 			}
 		}
 		for (i = 0; i < net->size[0]; i++) {
-			for (net->J[o * net->size[0] + i] = 0, j = 0; j < net->size[1]; j++) {
-				net->J[o * net->size[0] + i] += net->work[j] * net->W[0][i * net->size[1] + j];
+			for (J[o * net->size[0] + i] = 0, j = 0; j < net->size[1]; j++) {
+				J[o * net->size[0] + i] += net->work[j] * net->W[0][i * net->size[1] + j];
 			}
 		}
 	}
-	return net->J;
 }
