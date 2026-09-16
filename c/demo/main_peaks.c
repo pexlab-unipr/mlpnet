@@ -1,4 +1,4 @@
-/* This demo shows the fitting of "peaks" function. You can use the
+/* This demo shows the fitting of the peaks function. You can use the
    following MATLAB/Octave code to show the results.
 
    fid = fopen("xt.bin", "rb"); xt = fread(fid, "single"); fclose(fid);
@@ -57,6 +57,7 @@ int main()
 	mlpnet net;
 	float alpha = 0.999f;
 	float loss = 1.0f, input[2] = { 0 }, * output;
+	float x_min, y_min, eta, z_, z, J[2];
 	float* xt = malloc(N * N * sizeof(float));
 	float* yt = malloc(N * N * sizeof(float));
 	float* zt = malloc(N * N * sizeof(float));
@@ -77,6 +78,7 @@ int main()
 	//net.df = df_relu;
 	//net.eta = 1e-4f;
 	/* Train the network */
+	printf("Network training\n\n");
 	while (loss > 1e-2f) {
 		idx = (int)((float)(N * N - 1) * (float)rand() / (float)RAND_MAX);
 		input[0] = xt[idx] / 3.0f;
@@ -102,6 +104,28 @@ int main()
 	export(yt, N * N, "../yt.bin");
 	export(zt, N * N, "../zt.bin");
 	export(zh, N * N, "../zh.bin");
+	/* Find the minimum of the peaks function */
+	x_min = -0.7f; // starting point
+	y_min = -0.9f; // starting point
+	eta = 1e-5f;
+	z_ = 0;
+	z = 0;
+	iter = 0;
+	printf("\nFunction minimization\n");
+	printf("\n\tx\ty\tz");
+	do {
+		z_ = z;
+		input[0] = x_min / 3.0f;
+		input[1] = y_min / 3.0f;
+		output = mlpnet_eval(&net, input);
+		z = *output;
+		if (!(++iter % 100)) {
+			printf("\n%9.4g %9.4g %9.4g", x_min, y_min, z);
+		}
+		mlpnet_jacobian(&net, input, J);
+		x_min -= eta * J[0];
+		y_min -= eta * J[1];
+	} while (fabsf(z - z_) > 1e-8f);
 	/* Free the memory */
 	mlpnet_free(&net);
 	free(xt);
