@@ -1,8 +1,8 @@
 classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
 
     properties
-        nh; % number of hidden layers
         size; % layer sizes, including input and output layers
+        nh; % number of hidden layers
         eta = 1e-3; % learning rate
         f = @(x) tanh(x); % activation function
         df = @(x) 1 - tanh(x).^2; % derivative of the activation function

@@ -2,8 +2,8 @@
 #define MLPNET_H
 
 typedef struct {
+	int* size; // layer sizes, including input and output layers
 	int nh; // number of hidden layers
-	const int* size; // layer sizes, including input and output layers
 	float eta; // learning rate
 	float (*f)(float); // activation function
 	float (*df)(float); // derivative of the activation function
@@ -22,7 +22,7 @@ typedef struct {
 //          number of neurons in hidden layer nh, 
 //          number of outputs }.
 // Return 0 on success, -1 on allocation failure.
-int mlpnet_init(mlpnet* net, int nh, const int* size);
+int mlpnet_init(mlpnet* net, int* size, int nh);
 // Free the allocated memory.
 void mlpnet_free(mlpnet* net);
 // Evaluate the network at x. Return a pointer to

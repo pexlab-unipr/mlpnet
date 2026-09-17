@@ -22,9 +22,10 @@ static float randn(void)
 	return sqrtf(-2.0f * logf(u1)) * cosf(6.2831855f * u2);
 }
 
-int mlpnet_init(mlpnet* net, int nh, const int* size)
+int mlpnet_init(mlpnet* net, int* size, int nh)
 {
-	int i, k, work_len = size[nh + 1];
+	int k;
+	size_t i, work_len = (size_t)size[nh + 1];
 
 	net->nh = nh;
 	net->eta = 1e-3f;
@@ -46,12 +47,12 @@ int mlpnet_init(mlpnet* net, int nh, const int* size)
 		if (net->X[k] == 0 || net->Y[k] == 0 || net->W[k] == 0 || net->B[k] == 0) {
 			return -1;
 		}
-		for (i = 0; i < size[k] * size[k + 1]; i++) {
+		for (i = 0; i < (size_t)size[k] * (size_t)size[k + 1]; i++) {
 			net->W[k][i] = randn() / size[k];
 		}
 		if (k > 0) {
-			if (size[k] + size[k + 1] > work_len) {
-				work_len = size[k] + size[k + 1];
+			if ((size_t)size[k] + (size_t)size[k + 1] > work_len) {
+				work_len = (size_t)size[k] + (size_t)size[k + 1];
 			}
 		}
 	}
@@ -116,7 +117,8 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
 	for (k = net->nh; k >= 0; k--) {
 		if (k > 0) {
 			for (i = 0; i < net->size[k]; i++) {
-				for (net->work[i + net->size[k + 1]] = 0, j = 0; j < net->size[k + 1]; j++) {
+				net->work[i + net->size[k + 1]] = 0;
+				for (j = 0; j < net->size[k + 1]; j++) {
 					net->work[i + net->size[k + 1]] += net->work[j] * net->W[k][i * net->size[k + 1] + j];
 				}
 				net->work[i + net->size[k + 1]] *= net->df(net->Y[k - 1][i]);
@@ -150,7 +152,8 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 		}
 		for (k = net->nh; k > 0; k--) {
 			for (i = 0; i < net->size[k]; i++) {
-				for (net->work[i + net->size[k + 1]] = 0, j = 0; j < net->size[k + 1]; j++) {
+				net->work[i + net->size[k + 1]] = 0;
+				for (j = 0; j < net->size[k + 1]; j++) {
 					net->work[i + net->size[k + 1]] += net->work[j] * net->W[k][i * net->size[k + 1] + j];
 				}
 				net->work[i + net->size[k + 1]] *= net->df(net->Y[k - 1][i]);
@@ -160,7 +163,8 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 			}
 		}
 		for (i = 0; i < net->size[0]; i++) {
-			for (J[o * net->size[0] + i] = 0, j = 0; j < net->size[1]; j++) {
+			J[o * net->size[0] + i] = 0;
+			for (j = 0; j < net->size[1]; j++) {
 				J[o * net->size[0] + i] += net->work[j] * net->W[0][i * net->size[1] + j];
 			}
 		}

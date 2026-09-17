@@ -38,6 +38,10 @@ static void export(float* data, int len, char* filename)
 	fclose(data_file);
 }
 
+#define N 50
+//#define USE_RELU
+
+#ifdef USE_RELU
 static float f_relu(float x)
 {
 	return x > 0 ? x : 0.0f;
@@ -47,16 +51,15 @@ static float df_relu(float x)
 {
 	return x > 0 ? 1.0f : 0.0f;
 }
-
-#define N 50
+#endif
 
 int main()
 {
-	int i, j, idx, iter = 0;
+	int i, j, idx, iter;
 	int net_size[] = { 2, 10, 10, 1 };
 	mlpnet net;
 	float alpha = 0.999f;
-	float loss = 1.0f, input[2] = { 0 }, * output;
+	float loss, input[2] = { 0 }, * output;
 	float x_min, y_min, eta, z_, z, J[2];
 	float* xt = malloc(N * N * sizeof(float));
 	float* yt = malloc(N * N * sizeof(float));
@@ -71,25 +74,31 @@ int main()
 			zt[i + N * j] = peaks(xt[i + N * j], yt[i + N * j]);
 		}
 	}
+
 	/* Intialize the network */
 	//srand(0);
-	mlpnet_init(&net, sizeof(net_size) / sizeof(net_size[0]) - 2, net_size);
-	//net.f = f_relu;
-	//net.df = df_relu;
-	//net.eta = 1e-4f;
+	mlpnet_init(&net, net_size, sizeof(net_size) / sizeof(net_size[0]) - 2);
+#ifdef USE_RELU
+	net.f = f_relu;
+	net.df = df_relu;
+	net.eta = 1e-4f;
+#endif
+
 	/* Train the network */
 	printf("Network training\n\n");
-	while (loss > 1e-2f) {
+	iter = 0;
+	loss = 1.0f;
+	while (loss > 1e-2f && iter < 10000000) {
 		idx = (int)((float)(N * N - 1) * (float)rand() / (float)RAND_MAX);
 		input[0] = xt[idx] / 3.0f;
 		input[1] = yt[idx] / 3.0f;
 		output = &zt[idx];
 		loss = alpha * loss + (1 - alpha) * mlpnet_update(&net, input, output);
 		if (!(++iter % 10000)) {
-			iter = 0;
 			printf("Loss = %9.4e\n", loss);
 		}
 	}
+
 	/* Evaluate the network */
 	for (j = 0; j < N; j++) {
 		for (i = 0; i < N; i++) {
@@ -99,21 +108,23 @@ int main()
 			zh[i + N * j] = *output;
 		}
 	}
+
 	/* Export data */
 	export(xt, N * N, "../xt.bin");
 	export(yt, N * N, "../yt.bin");
 	export(zt, N * N, "../zt.bin");
 	export(zh, N * N, "../zh.bin");
+
 	/* Find the minimum of the peaks function */
 	x_min = -0.7f; // starting point
 	y_min = -0.9f; // starting point
 	eta = 1e-5f;
-	z_ = 0;
+	z_ = 1.0f;
 	z = 0;
 	iter = 0;
 	printf("\nFunction minimization\n");
 	printf("\n\tx\ty\tz");
-	do {
+	while (fabsf(z - z_) > 1e-8f && iter < 10000) {
 		z_ = z;
 		input[0] = x_min / 3.0f;
 		input[1] = y_min / 3.0f;
@@ -125,7 +136,8 @@ int main()
 		mlpnet_jacobian(&net, input, J);
 		x_min -= eta * J[0];
 		y_min -= eta * J[1];
-	} while (fabsf(z - z_) > 1e-8f);
+	}
+
 	/* Free the memory */
 	mlpnet_free(&net);
 	free(xt);
