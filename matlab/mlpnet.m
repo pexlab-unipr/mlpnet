@@ -47,19 +47,6 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
             y = net.Y{end};
         end
 
-        function J = jacobian(net,x)
-            % Compute the Jacobian matrix at x
-            J = zeros(net.size(end),net.size(1));
-            net.eval(x);
-            for out = 1:net.size(end)
-                t = (1:net.size(end)) == out;
-                for k = net.nh+1:-1:2
-                    t = (t*net.W{k}.').*net.df(net.Y{k-1});
-                end
-                J(out,:) = t*net.W{1}.';
-            end
-        end
-
         function loss = update(net,x,y)
             % Compute the gradient of the loss function w.r.t. the network
             % parameters by backpropagation at (x, y), then update the
@@ -76,6 +63,19 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
             for k = 1:net.nh+1
                 net.W{k} = net.W{k} - net.eta*net.dW{k};
                 net.B{k} = net.B{k} - net.eta*net.dB{k};
+            end
+        end
+
+        function J = jacobian(net,x)
+            % Compute the Jacobian matrix at x
+            J = zeros(net.size(end),net.size(1));
+            net.eval(x);
+            for out = 1:net.size(end)
+                t = (1:net.size(end)) == out;
+                for k = net.nh+1:-1:2
+                    t = (t*net.W{k}.').*net.df(net.Y{k-1});
+                end
+                J(out,:) = t*net.W{1}.';
             end
         end
     end

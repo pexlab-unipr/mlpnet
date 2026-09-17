@@ -137,6 +137,7 @@ int main()
 		x_min -= eta * J[0];
 		y_min -= eta * J[1];
 	}
+	printf("\n");
 
 	/* Free the memory */
 	mlpnet_free(&net);
