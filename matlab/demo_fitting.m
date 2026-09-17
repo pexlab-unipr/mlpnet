@@ -8,7 +8,7 @@ net = mlpnet([1,8,7,6,1]);
 % net.df = @(x) x>0;
 
 %% Train the network
-for epoch = 1:4e3
+for epoch = 1:5e3
     for k = 1:length(xt)
         net.update(xt(k),yt(k));
     end
@@ -19,8 +19,8 @@ xg = linspace(min(xt),max(xt),1001);
 yg = zeros(size(xg));
 grad_net = zeros(size(xg));
 for k = 1:numel(xg)
-    yg(k) = net.eval(xg(k));
     grad_net(k) = net.jacobian(xg(k));
+    yg(k) = net.Y{end};
 end
 grad_num = gradient(yg,xg(2)-xg(1));
 

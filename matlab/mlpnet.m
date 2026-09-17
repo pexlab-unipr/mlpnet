@@ -15,8 +15,8 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
     end
 
     methods
+        % Object constructor
         function net = mlpnet(net_size)
-            % Object constructor
             net.size = net_size;
             net.nh = length(net_size) - 2;
             net.X = cell(1,net.nh+1);
@@ -35,8 +35,9 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
             end
         end
 
+        % Evaluate the network at x. Return the network output. The
+        % function updates X and Y.
         function y = eval(net,x)
-            % Evaluate the network at x
             net.X{1} = x(:).';
             for k = 1:net.nh+1
                 net.Y{k} = net.X{k}*net.W{k} + net.B{k};
@@ -47,10 +48,12 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
             y = net.Y{end};
         end
 
+        % Compute the gradient of the loss function w.r.t. the network
+        % parameters by backpropagation at (x, y), then update W and B by
+        % stochastic gradient descent. Return the loss value computed
+        % before the update. The function also updates X and Y by
+        % evaluating the network at x.
         function loss = update(net,x,y)
-            % Compute the gradient of the loss function w.r.t. the network
-            % parameters by backpropagation at (x, y), then update the
-            % parameters by stochastic gradient descent
             t = net.eval(x) - y(:).';
             loss = 0.5*(t*t');
             for k = net.nh+1:-1:1
@@ -66,16 +69,17 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
             end
         end
 
+        % Return the Jacobian matrix computed at x. The function also
+        % updates X and Y by evaluating the network at x.
         function J = jacobian(net,x)
-            % Compute the Jacobian matrix at x
             J = zeros(net.size(end),net.size(1));
             net.eval(x);
-            for out = 1:net.size(end)
-                t = (1:net.size(end)) == out;
+            for o = 1:net.size(end)
+                t = (1:net.size(end)) == o;
                 for k = net.nh+1:-1:2
                     t = (t*net.W{k}.').*net.df(net.Y{k-1});
                 end
-                J(out,:) = t*net.W{1}.';
+                J(o,:) = t*net.W{1}.';
             end
         end
     end

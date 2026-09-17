@@ -128,12 +128,11 @@ int main()
 		z_ = z;
 		input[0] = x_min / 3.0f;
 		input[1] = y_min / 3.0f;
-		output = mlpnet_eval(&net, input);
-		z = *output;
+		mlpnet_jacobian(&net, input, J);
+		z = *net.Y[net.nh];
 		if (!(++iter % 100)) {
 			printf("\n%9.4g %9.4g %9.4g", x_min, y_min, z);
 		}
-		mlpnet_jacobian(&net, input, J);
 		x_min -= eta * J[0];
 		y_min -= eta * J[1];
 	}
