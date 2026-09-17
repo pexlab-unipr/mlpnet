@@ -6,8 +6,8 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
         eta = 1e-3; % learning rate
         f = @(x) tanh(x); % activation function
         df = @(x) 1 - tanh(x).^2; % derivative of the activation function
-        X; % inputs of all layers
-        Y; % outputs of all layers
+        X; % inputs for each layer
+        Y; % outputs for each layer
         W; % weights
         B; % biases
         dW; % gradient of the loss function w.r.t. the weights
@@ -15,7 +15,7 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
     end
 
     methods
-        % Object constructor
+        % Object constructor.
         function net = mlpnet(net_size)
             net.size = net_size;
             net.nh = length(net_size) - 2;

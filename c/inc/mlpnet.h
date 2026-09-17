@@ -7,8 +7,8 @@ typedef struct {
 	float eta; // learning rate
 	float (*f)(float); // activation function
 	float (*df)(float); // derivative of the activation function
-	float** X; // input vectors for all layers
-	float** Y; // output vectors for all layers
+	float** X; // input vectors for each layer
+	float** Y; // output vectors for each layer
 	float** W; // matrices of weights arranged in row-major order
 	float** B; // vectors of biases
 	float* work; // workspace memory

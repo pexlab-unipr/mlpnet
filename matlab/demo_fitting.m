@@ -1,8 +1,10 @@
 clear; close all; clc;
 
+%% Generate the dataset
 xt = linspace(-5,5,25);
-yt = 5*sin(xt) + 1*randn(size(xt));
+yt = 5*sin(xt) + randn(size(xt));
 
+%% Create the network
 net = mlpnet([1,8,7,6,1]);
 % net.f = @(x) max(0,x);
 % net.df = @(x) x>0;
@@ -43,5 +45,5 @@ plot(xg,grad_net,'--')
 xlabel('x')
 ylabel('dy/dx')
 ax(2) = gca;
-linkaxes(ax,'x')
 legend('Numerical','Network')
+linkaxes(ax,'x')
