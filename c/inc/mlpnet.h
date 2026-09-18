@@ -1,6 +1,7 @@
 #ifndef MLPNET_H
 #define MLPNET_H
 
+// Multilayer perceptron (MLP) neural network
 typedef struct {
 	int* size; // layer sizes, including input and output layers
 	int nh; // number of hidden layers
@@ -11,7 +12,7 @@ typedef struct {
 	float** W; // matrices of weights arranged in row-major order
 	float** B; // vectors of biases
 	float* work; // workspace memory
-} mlpnet; // Multilayer perceptron (MLP) neural network
+} mlpnet;
 
 // Initialize an MLP network with nh hidden layers and 
 // size = { number of inputs, 
@@ -33,8 +34,8 @@ float* mlpnet_eval(mlpnet* net, const float* x);
 // the loss value computed before the update. The function
 // also updates Y by evaluating the network at x.
 float mlpnet_update(mlpnet* net, const float* x, const float* y);
-// Compute the Jacobian matrix J at x. The elements of 
-// J are arranged in row-major order. The function also
+// Compute the Jacobian matrix J at x and store its 
+// elements in row-major order. The function also
 // updates Y by evaluating the network at x.
 void mlpnet_jacobian(mlpnet* net, const float* x, float* J);
 

@@ -1,4 +1,5 @@
-classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
+classdef mlpnet < handle
+    % Multilayer perceptron (MLP) neural network
 
     properties
         size; % layer sizes, including input and output layers
@@ -14,8 +15,8 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
     end
 
     methods
-        % Object constructor.
         function net = mlpnet(net_size)
+            % Object constructor.
             net.size = net_size;
             net.nh = length(net_size) - 2;
             net.Y = cell(1,net.nh+1);
@@ -31,22 +32,21 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
                 net.dB{k} = zeros(1,net.size(k+1));
             end
         end
-
-        % Evaluate the network at x and update Y. Return the net output.
         function y = eval(net,x)
+            % Evaluate the network at x and update Y. Return the network
+            % output.
             net.Y{1} = x(:).'*net.W{1} + net.B{1};
             for k = 2:net.nh+1
                 net.Y{k} = net.f(net.Y{k-1})*net.W{k} + net.B{k};
             end
             y = net.Y{end};
         end
-
-        % Compute the gradient of the loss function w.r.t. the network
-        % parameters by backpropagation at (x, y), then update W and B by
-        % stochastic gradient descent. Return the loss value computed
-        % before the update. The function also updates Y by evaluating the
-        % network at x.
         function loss = update(net,x,y)
+            % Compute the gradient of the loss function w.r.t. the network
+            % parameters by backpropagation at (x, y), then update W and B
+            % by stochastic gradient descent. Return the loss value
+            % computed before the update. The function also updates Y by
+            % evaluating the network at x.
             t = net.eval(x) - y(:).';
             loss = 0.5*(t*t');
             for k = net.nh+1:-1:2
@@ -61,18 +61,21 @@ classdef mlpnet < handle % Multilayer perceptron (MLP) neural network
                 net.B{k} = net.B{k} - net.eta*net.dB{k};
             end
         end
-
-        % Return the Jacobian matrix computed at x. The function also
-        % updates Y by evaluating the network at x.
         function J = jacobian(net,x)
-            J = zeros(net.size(end),net.size(1));
-            net.eval(x);
-            for o = 1:net.size(end)
-                t = (1:net.size(end)) == o;
-                for k = net.nh+1:-1:2
-                    t = (t*net.W{k}.').*net.df(net.Y{k-1});
+            % Return the Jacobian matrix computed at x. The function also
+            % updates Y by evaluating the network at x.
+            if net.nh > 0
+                net.eval(x);
+                J = zeros(net.size(end),net.size(1));
+                for o = 1:net.size(end)
+                    t = (net.W{net.nh+1}(:,o).').*net.df(net.Y{net.nh});
+                    for k = net.nh:-1:2
+                        t = (t*net.W{k}.').*net.df(net.Y{k-1});
+                    end
+                    J(o,:) = t*net.W{1}.';
                 end
-                J(o,:) = t*net.W{1}.';
+            else
+                J = net.W{1}.';
             end
         end
     end
