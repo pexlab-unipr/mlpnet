@@ -32,19 +32,17 @@ int mlpnet_init(mlpnet* net, int* size, int nh)
 	net->f = f_tanh;
 	net->df = df_tanh;
 	net->size = size;
-	net->X = calloc((size_t)nh + 1, sizeof(float*));
 	net->Y = calloc((size_t)nh + 1, sizeof(float*));
 	net->W = calloc((size_t)nh + 1, sizeof(float*));
 	net->B = calloc((size_t)nh + 1, sizeof(float*));
-	if (net->X == 0 || net->Y == 0 || net->W == 0 || net->B == 0) {
+	if (net->Y == 0 || net->W == 0 || net->B == 0) {
 		return -1;
 	}
 	for (k = 0; k <= nh; k++) {
-		net->X[k] = calloc((size_t)size[k], sizeof(float));
 		net->Y[k] = calloc((size_t)size[k + 1], sizeof(float));
 		net->W[k] = calloc((size_t)size[k] * (size_t)size[k + 1], sizeof(float));
 		net->B[k] = calloc((size_t)size[k + 1], sizeof(float));
-		if (net->X[k] == 0 || net->Y[k] == 0 || net->W[k] == 0 || net->B[k] == 0) {
+		if (net->Y[k] == 0 || net->W[k] == 0 || net->B[k] == 0) {
 			return -1;
 		}
 		for (i = 0; i < (size_t)size[k] * (size_t)size[k + 1]; i++) {
@@ -68,12 +66,10 @@ void mlpnet_free(mlpnet* net)
 	int k;
 
 	for (k = 0; k <= net->nh; k++) {
-		free(net->X[k]);
 		free(net->Y[k]);
 		free(net->W[k]);
 		free(net->B[k]);
 	}
-	free(net->X);
 	free(net->Y);
 	free(net->W);
 	free(net->B);
@@ -84,21 +80,13 @@ float* mlpnet_eval(mlpnet* net, const float* x)
 {
 	int i, j, k;
 
-	for (i = 0; i < net->size[0]; i++) {
-		net->X[0][i] = x[i];
-	}
 	for (k = 0; k <= net->nh; k++) {
 		for (j = 0; j < net->size[k + 1]; j++) {
 			net->Y[k][j] = net->B[k][j];
 		}
 		for (i = 0; i < net->size[k]; i++) {
 			for (j = 0; j < net->size[k + 1]; j++) {
-				net->Y[k][j] += net->X[k][i] * net->W[k][i * net->size[k + 1] + j];
-			}
-		}
-		if (k < net->nh) {
-			for (i = 0; i < net->size[k + 1]; i++) {
-				net->X[k + 1][i] = net->f(net->Y[k][i]);
+				net->Y[k][j] += (k ? net->f(net->Y[k - 1][i]) : x[i]) * net->W[k][i * net->size[k + 1] + j];
 			}
 		}
 	}
@@ -126,7 +114,7 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
 		}
 		for (i = 0; i < net->size[k]; i++) {
 			for (j = 0; j < net->size[k + 1]; j++) {
-				net->W[k][i * net->size[k + 1] + j] -= net->eta * net->work[j] * net->X[k][i];
+				net->W[k][i * net->size[k + 1] + j] -= net->eta * net->work[j] * (k ? net->f(net->Y[k - 1][i]) : x[i]);
 			}
 		}
 		for (i = 0; i < net->size[k + 1]; i++) {
