@@ -56,7 +56,7 @@ static float df_relu(float x)
 int main()
 {
 	int i, j, idx, iter;
-	int net_size[] = { 2, 10, 10, 1 };
+	size_t net_size[] = { 2, 10, 10, 1 };
 	mlpnet net;
 	float alpha = 0.999f;
 	float loss, input[2] = { 0 }, * output;
