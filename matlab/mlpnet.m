@@ -8,8 +8,8 @@ classdef mlpnet < handle
         f = @(x) tanh(x); % activation function
         df = @(x) 1 - tanh(x).^2; % derivative of the activation function
         Y; % outputs for each layer
-        W; % weights
         B; % biases
+        W; % weights
         dW; % gradient of the loss function w.r.t. the weights
         dB; % gradient of the loss function w.r.t. the biases
     end
@@ -20,16 +20,16 @@ classdef mlpnet < handle
             net.size = net_size;
             net.nh = length(net_size) - 2;
             net.Y = cell(1,net.nh+1);
-            net.W = cell(1,net.nh+1);
             net.B = cell(1,net.nh+1);
-            net.dW = cell(1,net.nh+1);
+            net.W = cell(1,net.nh+1);
             net.dB = cell(1,net.nh+1);
+            net.dW = cell(1,net.nh+1);
             for k = 1:net.nh+1
                 net.Y{k} = zeros(1,net.size(k+1));
-                net.W{k} = randn(net.size(k),net.size(k+1))/net.size(k);
                 net.B{k} = zeros(1,net.size(k+1));
-                net.dW{k} = zeros(net.size(k),net.size(k+1));
+                net.W{k} = randn(net.size(k),net.size(k+1))/net.size(k);
                 net.dB{k} = zeros(1,net.size(k+1));
+                net.dW{k} = zeros(net.size(k),net.size(k+1));
             end
         end
         function y = eval(net,x)
@@ -57,8 +57,8 @@ classdef mlpnet < handle
             net.dB{1} = t;
             net.dW{1} = t.*x(:);
             for k = 1:net.nh+1
-                net.W{k} = net.W{k} - net.eta*net.dW{k};
                 net.B{k} = net.B{k} - net.eta*net.dB{k};
+                net.W{k} = net.W{k} - net.eta*net.dW{k};
             end
         end
         function J = jacobian(net,x)

@@ -69,12 +69,12 @@ void mlpnet_free(mlpnet* net)
 
 	for (k = 0; k <= net->nh; k++) {
 		free(net->Y[k]);
-		free(net->W[k]);
 		free(net->B[k]);
+		free(net->W[k]);
 	}
 	free(net->Y);
-	free(net->W);
 	free(net->B);
+	free(net->W);
 	free(net->work);
 }
 

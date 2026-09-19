@@ -6,8 +6,26 @@ yt = 5*sin(xt) + randn(size(xt));
 
 %% Create the network
 net = mlpnet([1,8,7,6,1]);
-% net.f = @(x) max(0,x);
-% net.df = @(x) x>0;
+switch 0
+    case 1 % ReLU
+        net.f = @(x) max(0,x);
+        net.df = @(x) x>0;
+    case 2 % Softplus
+        net.f = @(x) log(1+exp(x));
+        net.df = @(x) 1./(1+exp(-x));
+    case 3 % Softsign
+        net.f = @(x) x./(1+abs(x));
+        net.df = @(x) 1./(1+abs(x)).^2;
+    case 4 % Sinusoid
+        net.f = @(x) sin(x);
+        net.df = @(x) cos(x);
+    case 5 % SiLU
+        net.f = @(x) x./(1+exp(-x));
+        net.df = @(x) 1./(exp(-x) + 1) + (x.*exp(-x))./(exp(-x) + 1).^2;
+    case 6 % Gaussian
+        net.f = @(x) exp(-x.^2);
+        net.df = @(x) -2*x.*exp(-x.^2);
+end
 
 %% Train the network
 for epoch = 1:5e3
