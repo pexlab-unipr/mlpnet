@@ -23,7 +23,7 @@ typedef struct {
 #define mlpnet(net, ...) \
 mlpnet net; \
 size_t net##_size[] = {__VA_ARGS__}; \
-mlpnet_init(&net, net##_size, sizeof(net##_size) / sizeof(net##_size[0]) - 2)
+mlpnet_init(&net, net##_size, sizeof(net##_size) / sizeof(size_t) - 2)
 #endif
 
 // Initialize an MLP network with nh hidden layers and 

@@ -18,6 +18,7 @@
    legend('True','Fitting','Location','northeast')
 */
 
+//#define MLPNET_USE_VARIADIC
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,8 +57,10 @@ static float df_relu(float x)
 int main()
 {
 	int i, j, idx, iter;
+#ifndef MLPNET_USE_VARIADIC
 	size_t net_size[] = { 2, 10, 10, 1 };
 	mlpnet net;
+#endif
 	float alpha = 0.999f;
 	float loss, input[2] = { 0 }, * output;
 	float x_min, y_min, eta, z_, z, J[2];
@@ -77,7 +80,11 @@ int main()
 
 	/* Intialize the network */
 	//srand(0);
-	mlpnet_init(&net, net_size, sizeof(net_size) / sizeof(net_size[0]) - 2);
+#ifndef MLPNET_USE_VARIADIC
+	mlpnet_init(&net, net_size, sizeof(net_size) / sizeof(size_t) - 2);
+#else
+	mlpnet(net, 2, 10, 10, 1);
+#endif
 #ifdef USE_RELU
 	net.f = f_relu;
 	net.df = df_relu;
