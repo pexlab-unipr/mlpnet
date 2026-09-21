@@ -30,7 +30,7 @@ static float peaks(float x, float y)
 		- expf(-powf(x + 1, 2) - y * y) / 3;
 }
 
-static void export(float* data, int len, char* filename)
+static void export(float* data, size_t len, char* filename)
 {
 	FILE* data_file = fopen(filename, "wb");
 
