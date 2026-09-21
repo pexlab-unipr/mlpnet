@@ -1,4 +1,6 @@
-clear; close all; clc;
+clear
+close all
+clc
 
 %% Generate the dataset
 xt = linspace(-5,5,25);
@@ -28,7 +30,10 @@ switch 0
 end
 
 %% Train the network
-for epoch = 1:5e3
+for epoch = 1:5000
+    if ~mod(epoch,250)
+        fprintf("Epoch %d\n",epoch);
+    end
     for k = 1:length(xt)
         net.update(xt(k),yt(k));
     end

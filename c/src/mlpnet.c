@@ -26,9 +26,6 @@ int mlpnet_init(mlpnet* net, size_t* size, size_t nh)
 {
 	size_t i, k, work_len = size[nh + 1];
 
-	if (nh < 0) {
-		return -1;
-	}
 	net->nh = nh;
 	net->eta = 1e-3f;
 	net->f = f_tanh;
