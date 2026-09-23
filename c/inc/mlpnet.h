@@ -1,6 +1,8 @@
 #ifndef MLPNET_H
 #define MLPNET_H
 
+#include <stddef.h>
+
 // Multilayer perceptron (MLP) neural network
 typedef struct {
 	size_t* size; // layer sizes, including input and output layers

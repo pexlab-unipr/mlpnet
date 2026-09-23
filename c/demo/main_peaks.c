@@ -19,10 +19,10 @@
 */
 
 //#define MLPNET_USE_VARIADIC
+#include "mlpnet.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "mlpnet.h"
 
 static float peaks(float x, float y)
 {
