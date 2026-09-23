@@ -19,10 +19,27 @@
 */
 
 //#define MLPNET_USE_VARIADIC
+//#define TICKTOCK
 #include "mlpnet.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef TICKTOCK
+#include <time.h>
+static inline int tick(struct timespec* t0) {
+#ifdef _WIN32
+	if (timespec_get(t0, TIME_UTC) == TIME_UTC) return 1;
+#else
+	if (clock_gettime(CLOCK_REALTIME, t0) == 0) return 1;
+#endif
+	return 0;
+}
+static inline double tock(struct timespec* t0) {
+	struct timespec tf = { 0 }; tick(&tf);
+	return ((tf.tv_sec - t0->tv_sec) + ((tf.tv_nsec - t0->tv_nsec) * 1e-9));
+}
+#endif
 
 static float peaks(float x, float y)
 {
@@ -56,6 +73,9 @@ static float df_relu(float x)
 
 int main()
 {
+#ifdef TICKTOCK
+	struct timespec t0;
+#endif
 	int i, j, idx, iter;
 #ifndef MLPNET_USE_VARIADIC
 	size_t net_size[] = { 2, 10, 10, 1 };
@@ -92,9 +112,12 @@ int main()
 #endif
 
 	/* Train the network */
-	printf("Network training\n\n");
+	printf("Network training\n\n   Loss\n");
 	iter = 0;
 	loss = 1.0f;
+#ifdef TICKTOCK
+	tick(&t0);
+#endif
 	while (loss > 1e-2f && iter < 10000000) {
 		idx = (int)((float)(N * N - 1) * (float)rand() / (float)RAND_MAX);
 		input[0] = xt[idx] / 3.0f;
@@ -102,9 +125,13 @@ int main()
 		output = &zt[idx];
 		loss = alpha * loss + (1 - alpha) * mlpnet_update(&net, input, output);
 		if (!(++iter % 10000)) {
-			printf("Loss = %9.4e\n", loss);
+			printf("%9.4e\n", loss);
 		}
 	}
+	printf("\nTotal number of iterations: %d\nFinal loss: %9.4e\n", iter, loss);
+#ifdef TICKTOCK
+	printf("Elapsed time: %f s\n", tock(&t0));
+#endif
 
 	/* Evaluate the network */
 	for (j = 0; j < N; j++) {
