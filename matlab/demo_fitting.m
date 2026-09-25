@@ -6,6 +6,10 @@ clc
 xt = linspace(-5,5,25);
 yt = 5*sin(xt) + randn(size(xt));
 
+%% Define the scaling factors
+x_scale = 1/max(abs(xt));
+y_scale = 1/max(abs(yt));
+
 %% Create the network
 net = mlpnet([1,8,7,6,1]);
 switch 0
@@ -30,12 +34,12 @@ switch 0
 end
 
 %% Train the network
-for epoch = 1:5000
-    if ~mod(epoch,250)
+for epoch = 1:1e4
+    if ~mod(epoch,5e2)
         fprintf("Epoch %d\n",epoch);
     end
     for k = 1:length(xt)
-        net.update(xt(k),yt(k));
+        net.update(xt(k)*x_scale,yt(k)*y_scale);
     end
 end
 
@@ -44,8 +48,8 @@ xg = linspace(min(xt),max(xt),1001);
 yg = zeros(size(xg));
 grad_net = zeros(size(xg));
 for k = 1:numel(xg)
-    grad_net(k) = net.jacobian(xg(k));
-    yg(k) = net.Y{end};
+    grad_net(k) = net.jacobian(xg(k)*x_scale)*(x_scale/y_scale);
+    yg(k) = net.Y{end}/y_scale;
 end
 grad_num = gradient(yg,xg(2)-xg(1));
 

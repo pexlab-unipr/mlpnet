@@ -103,10 +103,11 @@ float* mlpnet_eval(mlpnet* net, const float* x)
 float mlpnet_update(mlpnet* net, const float* x, const float* y)
 {
 	size_t i, j, k, s0, s1;
-	float fy, loss = 0, t, * Y_, * B, * W, * work = net->work, * yh;
+	float fy, loss, t, * Y_, * B, * W, * work = net->work, * yh;
 	const float eta = net->eta;
 
 	yh = mlpnet_eval(net, x);
+	loss = 0;
 	for (i = 0; i < net->size[net->nh + 1]; i++) {
 		work[i] = yh[i] - y[i];
 		loss += work[i] * work[i];
