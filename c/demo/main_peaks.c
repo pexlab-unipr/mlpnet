@@ -1,5 +1,5 @@
 /* This demo shows the fitting of the peaks function. You can use the
-   following MATLAB/Octave code to show the results.
+   following MATLAB/Octave code to plot the results.
 
    fid = fopen("xt.bin", "rb"); xt = fread(fid, "single"); fclose(fid);
    fid = fopen("yt.bin", "rb"); yt = fread(fid, "single"); fclose(fid);

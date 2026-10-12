@@ -26,11 +26,11 @@ int mlpnet_init(mlpnet* net, size_t* sz, size_t nh)
 {
 	size_t i, k, work_len = sz[nh + 1];
 
+	net->sz = sz;
 	net->nh = nh;
 	net->eta = 1e-3f;
 	net->f = f_tanh;
 	net->df = df_tanh;
-	net->sz = sz;
 	net->Y = calloc(nh + 1, sizeof(float*));
 	net->B = calloc(nh + 1, sizeof(float*));
 	net->W = calloc(nh + 1, sizeof(float*));
