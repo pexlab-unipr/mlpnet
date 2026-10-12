@@ -78,7 +78,7 @@ int main()
 #endif
 	int i, j, idx, iter;
 #ifndef MLPNET_USE_VARIADIC
-	size_t net_size[] = { 2, 10, 10, 1 };
+	size_t net_sz[] = { 2, 10, 10, 1 };
 	mlpnet net;
 #endif
 	float alpha = 0.999f;
@@ -101,7 +101,7 @@ int main()
 	/* Intialize the network */
 	//srand(0);
 #ifndef MLPNET_USE_VARIADIC
-	mlpnet_init(&net, net_size, sizeof(net_size) / sizeof(size_t) - 2);
+	mlpnet_init(&net, net_sz, sizeof(net_sz) / sizeof(size_t) - 2);
 #else
 	mlpnet(net, 2, 10, 10, 1);
 #endif

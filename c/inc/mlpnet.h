@@ -5,7 +5,7 @@
 
 // Multilayer perceptron (MLP) neural network
 typedef struct {
-	size_t* size; // layer sizes, including input and output layers
+	size_t* sz; // layer sizes, including input and output layers
 	size_t nh; // number of hidden layers
 	float eta; // learning rate
 	float (*f)(float); // activation function
@@ -24,19 +24,19 @@ typedef struct {
 // containing n1, n2 and n3 neurons, respectively. 
 #define mlpnet(net, ...) \
 mlpnet net; \
-size_t net##_size[] = {__VA_ARGS__}; \
-mlpnet_init(&net, net##_size, sizeof(net##_size) / sizeof(size_t) - 2)
+size_t net##_sz[] = {__VA_ARGS__}; \
+mlpnet_init(&net, net##_sz, sizeof(net##_sz) / sizeof(size_t) - 2)
 #endif
 
 // Initialize an MLP network with nh hidden layers and 
-// size = { number of inputs, 
-//          number of neurons in hidden layer 1, 
-//          number of neurons in hidden layer 2, 
-//          ..., 
-//          number of neurons in hidden layer nh, 
-//          number of outputs }.
+// sz = { number of inputs, 
+//        number of neurons in hidden layer 1, 
+//        number of neurons in hidden layer 2, 
+//        ..., 
+//        number of neurons in hidden layer nh, 
+//        number of outputs }.
 // Return 0 on success, -1 on allocation failure.
-int mlpnet_init(mlpnet* net, size_t* size, size_t nh);
+int mlpnet_init(mlpnet* net, size_t* sz, size_t nh);
 
 // Free the allocated memory.
 void mlpnet_free(mlpnet* net);
