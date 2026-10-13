@@ -15,10 +15,14 @@ classdef mlpnet < handle
     end
 
     methods
-        function net = mlpnet(layer_sizes)
-            % Object constructor.
-            net.sz = layer_sizes;
-            net.nh = length(layer_sizes) - 2;
+        function net = mlpnet(sz)
+            % Create an MLP neural network with the layer sizes specified
+            % in the array sz = [n_in, n_1, n_2, ..., n_nh, n_out], where
+            % n_in is the number of inputs, n_out is the number of outputs
+            % and n_i is the number of neurons in the i-th hidden layer,
+            % where 1 <= i <= nh.
+            net.sz = sz;
+            net.nh = length(sz) - 2;
             net.Y = cell(1,net.nh+1);
             net.B = cell(1,net.nh+1);
             net.W = cell(1,net.nh+1);

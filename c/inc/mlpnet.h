@@ -18,10 +18,11 @@ typedef struct {
 
 #ifdef MLPNET_USE_VARIADIC
 // Create and initialize an MLP network with the specified 
-// layer sizes, including input and output layers. Example:
-// mlpnet(net, ni, n1, n2, n3, no) instantiates an MLP net
-// with ni inputs, no outputs and three hidden layers 
-// containing n1, n2 and n3 neurons, respectively. 
+// layer sizes, including the input and output layers. For 
+// example, mlpnet(net, n_in, n_1, n_2, ..., n_nh, n_out)
+// creates an MLP network with n_in inputs, n_out outputs 
+// and nh hidden layers, where the i-th hidden layer 
+// contains n_i neurons, for 1 <= i <= nh. 
 #define mlpnet(net, ...) \
 mlpnet net; \
 size_t net##_sz[] = {__VA_ARGS__}; \
@@ -29,12 +30,10 @@ mlpnet_init(&net, net##_sz, sizeof(net##_sz) / sizeof(size_t) - 2)
 #endif
 
 // Initialize an MLP network with nh hidden layers and 
-// sz = { number of inputs, 
-//        number of neurons in hidden layer 1, 
-//        number of neurons in hidden layer 2, 
-//        ..., 
-//        number of neurons in hidden layer nh, 
-//        number of outputs }.
+// sz = { n_in, n_1, n_2, ..., n_nh, n_out }, where n_in
+// is the number of inputs, n_out is the number of 
+// outputs and n_i is the number of neurons in the i-th 
+// hidden layer, where 1 <= i <= nh.
 // Return 0 on success, -1 on allocation failure.
 int mlpnet_init(mlpnet* net, size_t* sz, size_t nh);
 
