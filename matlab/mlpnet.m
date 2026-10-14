@@ -82,5 +82,58 @@ classdef mlpnet < handle
                 J = net.W{1}.';
             end
         end
+        function it = train(net,X,Y,itmax,tol,lambda)
+            m = net.sz(end);
+            n = size(Y,1);
+            np = sum(net.sz(2:end));
+            for k = 1:net.nh+1
+                np = np + net.sz(k)*net.sz(k+1);
+            end
+            e = zeros(m,n);
+            J = zeros(m*n,np);
+            for it = 1:itmax
+                e_ = e;
+                for k = 1:n
+                    e(:,k) = (Y(k,:) - net.eval(X(k,:))).';
+                    Jk = zeros(m,np);
+                    for o = 1:m
+                        idx0 = 1;
+                        t = (1:m) == o;
+                        for p = net.nh+1:-1:2
+                            idx = idx0:idx0+numel(net.B{p})-1;
+                            Jk(o,idx) = t;
+                            idx0 = idx(end)+1;
+                            idx = idx0:idx0+numel(net.W{p})-1;
+                            tmp = t.*net.f(net.Y{p-1}).';
+                            Jk(o,idx) = tmp(:).';
+                            t = (t*net.W{p}.').*net.df(net.Y{p-1});
+                            idx0 = idx(end)+1;
+                        end
+                        idx = idx0:idx0+numel(net.B{1})-1;
+                        Jk(o,idx) = t;
+                        idx0 = idx(end)+1;
+                        idx = idx0:idx0+numel(net.W{1})-1;
+                        tmp = t.*X(k,:).';
+                        Jk(o,idx) = tmp(:).';
+                    end
+                    J((1:m)+(k-1)*m,:) = Jk;
+                end
+                A = [J; sqrt(lambda)*eye(size(J,2))];
+                b = [e(:); zeros(size(J,2),1)];
+                dp = A\b;
+                if norm(e(:) - e_(:)) < tol*norm(e(:))
+                    break
+                end
+                idx0 = 1;
+                for k = net.nh+1:-1:1
+                    idx = idx0:idx0+numel(net.B{k})-1;
+                    net.B{k} = net.B{k} + reshape(dp(idx),size(net.B{k}));
+                    idx0 = idx(end)+1;
+                    idx = idx0:idx0+numel(net.W{k})-1;
+                    net.W{k} = net.W{k} + reshape(dp(idx),size(net.W{k}));
+                    idx0 = idx(end)+1;
+                end
+            end
+        end
     end
 end
