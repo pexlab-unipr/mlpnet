@@ -34,13 +34,18 @@ switch 0
 end
 
 %% Train the network
-for epoch = 1:1e4
-    if ~mod(epoch,5e2)
-        fprintf("Epoch %d\n",epoch);
-    end
-    for k = 1:length(xt)
-        net.update(xt(k)*x_scale,yt(k)*y_scale);
-    end
+switch 'sgd'
+    case 'sgd' % stochastic gradient descent
+        for epoch = 1:1e4
+            if ~mod(epoch,5e2)
+                fprintf("Epoch %d\n",epoch);
+            end
+            for k = 1:length(xt)
+                net.update(xt(k)*x_scale,yt(k)*y_scale);
+            end
+        end
+    case 'lm' % Levenberg-Marquardt algorithm
+        [iter,resnorm] = net.train(xt(:)*x_scale,yt(:)*y_scale);
 end
 
 %% Evaluate the network

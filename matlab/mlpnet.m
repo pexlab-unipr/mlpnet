@@ -13,7 +13,7 @@ classdef mlpnet < handle
         gW; % gradient of the loss function w.r.t. the weights
         gB; % gradient of the loss function w.r.t. the biases
         % Parameters for Levenberg-Marquardt training algorithm
-        itmax = 1000; % maximum number of iterations.
+        itermax = 1000; % maximum number of iterations.
         tol = 1e-2; % relative termination tolerance
         rho = 1; % initial damping factor
         mu = 2; % damping adjustment factor
@@ -87,86 +87,78 @@ classdef mlpnet < handle
                 J = net.W{1}.';
             end
         end
-        function [it,e_norm] = train(net,X,Y)
+        function [iter,resnorm] = train(net,X,Y)
             % Train the MLP neural network by Levenberg-Marquardt
             % algorithm. X and Y are the array of training inputs and
             % outputs, respectively: each row must correspond to one
             % observation. The function returns the number of iterations
-            % taken and the norm of the error vector.
+            % taken and the norm of the residual vector.
             m = net.sz(end);
             n = size(Y,1);
-            np = sum(net.sz(2:end));
-            for k = 1:net.nh+1
-                np = np + net.sz(k)*net.sz(k+1);
-            end
-            e_norm = 0;
+            np = dot(net.sz(2:end), 1 + net.sz(1:end-1));
+            resnorm = 0;
             B_ = net.B;
             W_ = net.W;
-            e = zeros(m,n);
+            rho_d = net.rho;
+            r = zeros(m,n);
             J = zeros(m*n,np);
-            rho0 = net.rho;
-            for it = 1:net.itmax
-                if net.mu > 1 && it > 1
-                    e_ = e;
+            for iter = 1:net.itermax
+                if net.mu > 1 && iter > 1
+                    r_ = r;
                     J_ = J;
                 end
-                e_norm_ = e_norm;
+                resnorm_ = resnorm;
+                row = 0;
                 for k = 1:n
-                    e(:,k) = (Y(k,:) - net.eval(X(k,:))).';
-                    Jk = zeros(m,np);
+                    r(:,k) = (Y(k,:) - net.eval(X(k,:))).';
                     for o = 1:m
-                        idx0 = 1;
-                        t = (1:m) == o;
+                        row = row + 1;
+                        col = 0;
+                        t = (0:m-1) == mod(row-1,m);
                         for p = net.nh+1:-1:2
-                            idx = idx0:idx0+numel(net.B{p})-1;
-                            Jk(o,idx) = t;
-                            idx0 = idx(end)+1;
-                            idx = idx0:idx0+numel(net.W{p})-1;
+                            col = col(end)+1:col(end)+numel(net.B{p});
+                            J(row,col) = t;
+                            col = col(end)+1:col(end)+numel(net.W{p});
                             tmp = t.*net.f(net.Y{p-1}).';
-                            Jk(o,idx) = tmp(:).';
+                            J(row,col) = tmp(:).';
                             t = (t*net.W{p}.').*net.df(net.Y{p-1});
-                            idx0 = idx(end)+1;
                         end
-                        idx = idx0:idx0+numel(net.B{1})-1;
-                        Jk(o,idx) = t;
-                        idx0 = idx(end)+1;
-                        idx = idx0:idx0+numel(net.W{1})-1;
+                        col = col(end)+1:col(end)+numel(net.B{1});
+                        J(row,col) = t;
+                        col = col(end)+1:col(end)+numel(net.W{1});
                         tmp = t.*X(k,:).';
-                        Jk(o,idx) = tmp(:).';
+                        J(row,col) = tmp(:).';
                     end
-                    J((1:m)+(k-1)*m,:) = Jk;
                 end
-                e_norm = norm(e(:));
-                if net.mu > 1 && it > 1
-                    if e_norm > e_norm_
-                        rho0 = rho0*net.mu*net.mu;
+                resnorm = norm(r(:));
+                if net.mu > 1 && iter > 1
+                    if resnorm > resnorm_
+                        rho_d = rho_d*net.mu*net.mu;
                         for k = 1:net.nh+1
                             net.B{k} = B_{k};
                             net.W{k} = W_{k};
-                            e_norm = e_norm_;
-                            e = e_;
+                            resnorm = resnorm_;
+                            r = r_;
                             J = J_;
                         end
                     else
-                        rho0 = rho0/net.mu;
+                        rho_d = rho_d/net.mu;
                     end
                 end
-                if norm(J.'*e(:)) < net.tol*(1 + norm(J(:)))
+                if norm(J'*r(:)) < net.tol*(1 + norm(J(:)))
                     break
                 end
-                A = [J; sqrt(rho0)*eye(np)];
-                b = [e(:); zeros(np,1)];
+                A = [J; sqrt(rho_d)*eye(np)];
+                b = [r(:); zeros(np,1)];
                 dp = A\b;
-                idx0 = 1;
+                row = 0;
                 for k = net.nh+1:-1:1
                     B_{k} = net.B{k};
                     W_{k} = net.W{k};
-                    idx = idx0:idx0+numel(net.B{k})-1;
-                    net.B{k} = net.B{k} + reshape(dp(idx),size(net.B{k}));
-                    idx0 = idx(end)+1;
-                    idx = idx0:idx0+numel(net.W{k})-1;
-                    net.W{k} = net.W{k} + reshape(dp(idx),size(net.W{k}));
-                    idx0 = idx(end)+1;
+                    row = row(end)+1:row(end)+numel(net.B{k});
+                    net.B{k} = net.B{k} + reshape(dp(row),size(net.B{k}));
+                    row = row(end)+1:row(end)+numel(net.W{k});
+                    net.W{k} = net.W{k} + reshape(dp(row),size(net.W{k}));
                 end
             end
         end
