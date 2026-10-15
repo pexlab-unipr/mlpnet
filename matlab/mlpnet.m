@@ -15,7 +15,7 @@ classdef mlpnet < handle
         % Parameters for Levenberg-Marquardt training algorithm
         itermax = 1000; % maximum number of iterations.
         tol = 1e-2; % relative termination tolerance
-        rho0 = 1e-3; % initial damping factor
+        rho = 1e-3; % initial damping factor
         mu = 2; % damping adjustment factor
     end
 
@@ -98,7 +98,8 @@ classdef mlpnet < handle
             n = size(Y,1);
             np = dot(net.sz(2:end), 1 + net.sz(1:end-1));
             resnorm = 0;
-            rho = net.rho0;
+            rho_sr = sqrt(net.rho);
+            mu_sr = sqrt(net.mu);
             r = zeros(m,n);
             J = zeros(m*n,np);
             for iter = 1:net.itermax
@@ -108,7 +109,7 @@ classdef mlpnet < handle
                 end
                 resnorm = norm(r(:));
                 if net.mu > 1 && iter > 1 && resnorm > resnorm_
-                    rho = rho*net.mu*net.mu;
+                    rho_sr = rho_sr*net.mu;
                     row = 0;
                     for k = net.nh+1:-1:1
                         row = row(end)+1:row(end)+numel(net.B{k});
@@ -122,7 +123,7 @@ classdef mlpnet < handle
                     resnorm = resnorm_;
                 else
                     if net.mu > 1 && iter > 1
-                        rho = rho/net.mu;
+                        rho_sr = rho_sr/mu_sr;
                     end
                     row = 0;
                     for obs = 1:n
@@ -146,11 +147,11 @@ classdef mlpnet < handle
                             J(row,col) = tmp(:).';
                         end
                     end
+                    if norm(J'*r(:)) < net.tol*(1 + norm(J(:)))
+                        break
+                    end
                 end
-                if norm(J'*r(:)) < net.tol*(1 + norm(J(:)))
-                    break
-                end
-                A = [J; sqrt(rho)*eye(np)];
+                A = [J; rho_sr*eye(np)];
                 b = [r(:); zeros(np,1)];
                 dp = A\b;
                 row = 0;
