@@ -148,18 +148,18 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
 
 void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 {
-	size_t i, j, k, o, s0, s1;
+	size_t i, j, k, out, s0, s1;
 	float t, * Y_, * W, * work = net->work;
 
 	if (net->nh > 0) {
 		mlpnet_eval(net, x);
-		for (o = 0; o < net->sz[net->nh + 1]; o++) {
+		for (out = 0; out < net->sz[net->nh + 1]; out++) {
 			s0 = net->sz[net->nh];
 			s1 = net->sz[net->nh + 1];
 			Y_ = net->Y[net->nh - 1];
 			W = net->W[net->nh];
 			for (i = 0; i < s0; i++) {
-				work[i] = W[i * s1 + o] * net->df(Y_[i]);
+				work[i] = W[i * s1 + out] * net->df(Y_[i]);
 			}
 			for (k = net->nh - 1; k > 0; k--) {
 				s0 = net->sz[k];
@@ -193,9 +193,9 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 		s0 = net->sz[0];
 		s1 = net->sz[1];
 		W = net->W[0];
-		for (o = 0; o < s1; o++) {
+		for (out = 0; out < s1; out++) {
 			for (i = 0; i < s0; i++, J++) {
-				*J = W[i * s1 + o];
+				*J = W[i * s1 + out];
 			}
 		}
 	}
