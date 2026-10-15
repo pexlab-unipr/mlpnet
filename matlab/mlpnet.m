@@ -18,6 +18,7 @@ classdef mlpnet < handle
         tol = 1e-2; % relative termination tolerance
         rho = 1e-3; % initial damping factor
         mu = 2; % damping adjustment factor
+        solver = 'normal'; % linear solver: 'normal' or 'robust'
     end
 
     methods
@@ -97,12 +98,12 @@ classdef mlpnet < handle
             % taken and the norm of the residual vector.
             m = net.sz(end);
             n = size(Y,1);
-            np = dot(net.sz(2:end), 1 + net.sz(1:end-1));
+            p = dot(net.sz(2:end), 1 + net.sz(1:end-1));
             resnorm = Inf;
             rho_sr = sqrt(net.rho*net.mu);
             mu_sr = sqrt(net.mu);
             r = zeros(m,n);
-            J = zeros(m*n,np);
+            J = zeros(m*n,p);
             for iter = 1:net.itermax
                 resnorm_ = resnorm;
                 for obs = 1:n
@@ -148,12 +149,19 @@ classdef mlpnet < handle
                             J(row,col) = tmp(:).';
                         end
                     end
-                    if norm(J'*r(:)) < net.tol*(1 + norm(J(:)))
-                        break
+                    g = J'*r(:);
+                    if norm(g) < net.tol*(1 + norm(J,'fro'))
+                        return
                     end
                 end
-                A = [J; rho_sr*eye(np)];
-                b = [r(:); zeros(np,1)];
+                switch net.solver
+                    case 'normal'
+                        A = J'*J + rho_sr^2*eye(p);
+                        b = g;
+                    case 'robust'
+                        A = [J; rho_sr*eye(p)];
+                        b = [r(:); zeros(p,1)];
+                end
                 dp = A\b;
                 row = 0;
                 for k = net.nh+1:-1:1
