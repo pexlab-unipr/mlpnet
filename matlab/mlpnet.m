@@ -2,6 +2,7 @@ classdef mlpnet < handle
     % Multilayer perceptron (MLP) neural network
 
     properties
+        % General properties
         sz; % layer sizes, including input and output layers
         nh; % number of hidden layers
         eta = 1e-3; % learning rate for stochastic gradient descent
@@ -97,8 +98,8 @@ classdef mlpnet < handle
             m = net.sz(end);
             n = size(Y,1);
             np = dot(net.sz(2:end), 1 + net.sz(1:end-1));
-            resnorm = 0;
-            rho_sr = sqrt(net.rho);
+            resnorm = Inf;
+            rho_sr = sqrt(net.rho*net.mu);
             mu_sr = sqrt(net.mu);
             r = zeros(m,n);
             J = zeros(m*n,np);
@@ -108,7 +109,7 @@ classdef mlpnet < handle
                     r(:,obs) = (Y(obs,:) - net.eval(X(obs,:))).';
                 end
                 resnorm = norm(r(:));
-                if net.mu > 1 && iter > 1 && resnorm > resnorm_
+                if net.mu > 1 && resnorm > resnorm_
                     rho_sr = rho_sr*net.mu;
                     row = 0;
                     for k = net.nh+1:-1:1
@@ -122,7 +123,7 @@ classdef mlpnet < handle
                     end
                     resnorm = resnorm_;
                 else
-                    if net.mu > 1 && iter > 1
+                    if net.mu > 1
                         rho_sr = rho_sr/mu_sr;
                     end
                     row = 0;
