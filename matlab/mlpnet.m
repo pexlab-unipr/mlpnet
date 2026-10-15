@@ -103,46 +103,46 @@ classdef mlpnet < handle
             r = zeros(m,n);
             J = zeros(m*n,np);
             for iter = 1:net.itermax
-                if net.mu > 1 && iter > 1
-                    r_ = r;
-                    J_ = J;
-                end
                 resnorm_ = resnorm;
-                row = 0;
-                for k = 1:n
-                    r(:,k) = (Y(k,:) - net.eval(X(k,:))).';
-                    for o = 1:m
-                        row = row + 1;
-                        col = 0;
-                        t = (0:m-1) == mod(row-1,m);
-                        for p = net.nh+1:-1:2
-                            col = col(end)+1:col(end)+numel(net.B{p});
-                            J(row,col) = t;
-                            col = col(end)+1:col(end)+numel(net.W{p});
-                            tmp = t.*net.f(net.Y{p-1}).';
-                            J(row,col) = tmp(:).';
-                            t = (t*net.W{p}.').*net.df(net.Y{p-1});
-                        end
-                        col = col(end)+1:col(end)+numel(net.B{1});
-                        J(row,col) = t;
-                        col = col(end)+1:col(end)+numel(net.W{1});
-                        tmp = t.*X(k,:).';
-                        J(row,col) = tmp(:).';
-                    end
+                for i = 1:n
+                    r(:,i) = (Y(i,:) - net.eval(X(i,:))).';
                 end
                 resnorm = norm(r(:));
-                if net.mu > 1 && iter > 1
-                    if resnorm > resnorm_
-                        rho_d = rho_d*net.mu*net.mu;
-                        for k = 1:net.nh+1
-                            net.B{k} = B_{k};
-                            net.W{k} = W_{k};
-                            resnorm = resnorm_;
-                            r = r_;
-                            J = J_;
-                        end
-                    else
+                if net.mu > 1 && iter > 1 && resnorm > resnorm_
+                    rho_d = rho_d*net.mu*net.mu;
+                    for k = 1:net.nh+1
+                        net.B{k} = B_{k};
+                        net.W{k} = W_{k};
+                    end
+                    for i = 1:n
+                        r(:,i) = (Y(i,:) - net.eval(X(i,:))).';
+                    end
+                    resnorm = resnorm_;
+                else
+                    if net.mu > 1 && iter > 1
                         rho_d = rho_d/net.mu;
+                    end
+                    row = 0;
+                    for i = 1:n
+                        net.eval(X(i,:));
+                        for o = 1:m
+                            row = row + 1;
+                            col = 0;
+                            t = (0:m-1) == mod(row-1,m);
+                            for k = net.nh+1:-1:2
+                                col = col(end)+1:col(end)+numel(net.B{k});
+                                J(row,col) = t;
+                                col = col(end)+1:col(end)+numel(net.W{k});
+                                tmp = t.*net.f(net.Y{k-1}).';
+                                J(row,col) = tmp(:).';
+                                t = (t*net.W{k}.').*net.df(net.Y{k-1});
+                            end
+                            col = col(end)+1:col(end)+numel(net.B{1});
+                            J(row,col) = t;
+                            col = col(end)+1:col(end)+numel(net.W{1});
+                            tmp = t.*X(i,:).';
+                            J(row,col) = tmp(:).';
+                        end
                     end
                 end
                 if norm(J'*r(:)) < net.tol*(1 + norm(J(:)))
