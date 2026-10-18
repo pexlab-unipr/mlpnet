@@ -275,7 +275,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		if (net->mu > 1.0f && resnorm > resnorm_) { // reject the update
 			rho_sr *= net->mu;
 			for (i = 0; i < np; i++) {
-				p[i] -= b_data[i];
+				p[i] -= A_data[i];
 			}
 			for (i = 0, obs = 0; obs < n; obs++) {
 				mlpnet_eval(net, X + net->sz[0] * obs);
@@ -355,7 +355,8 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		matrixf_init(&dp, np, 1, b_data, 0);
 		matrixf_solve_qr(&A, &b, &dp);
 		for (i = 0; i < np; i++) {
-			p[i] += b_data[i];
+			A_data[i] = b_data[i];
+			p[i] += A_data[i];
 		}
 		iter++;
 	}
