@@ -98,12 +98,12 @@ classdef mlpnet < handle
             % taken and the norm of the residual vector.
             m = net.sz(end);
             n = size(Y,1);
-            p = dot(net.sz(2:end), 1 + net.sz(1:end-1));
+            np = dot(net.sz(2:end), 1 + net.sz(1:end-1));
             resnorm = Inf;
             rho_sr = sqrt(net.rho*net.mu);
             mu_sr = sqrt(net.mu);
             r = zeros(m,n);
-            J = zeros(m*n,p);
+            J = zeros(m*n,np);
             for iter = 1:net.itermax
                 resnorm_ = resnorm;
                 for obs = 1:n
@@ -124,9 +124,7 @@ classdef mlpnet < handle
                     end
                     resnorm = resnorm_;
                 else
-                    if net.mu > 1
-                        rho_sr = rho_sr/mu_sr;
-                    end
+                    rho_sr = rho_sr/mu_sr;
                     row = 0;
                     for obs = 1:n
                         net.eval(X(obs,:));
@@ -156,11 +154,11 @@ classdef mlpnet < handle
                 end
                 switch net.solver
                     case 'normal'
-                        A = J'*J + rho_sr^2*eye(p);
+                        A = J'*J + rho_sr^2*eye(np);
                         b = g;
                     case 'robust'
-                        A = [J; rho_sr*eye(p)];
-                        b = [r(:); zeros(p,1)];
+                        A = [J; rho_sr*eye(np)];
+                        b = [r(:); zeros(np,1)];
                 end
                 dp = A\b;
                 row = 0;

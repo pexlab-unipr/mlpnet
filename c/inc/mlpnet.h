@@ -7,6 +7,7 @@
 typedef struct {
 	size_t* sz; // layer sizes, including input and output layers
 	size_t nh; // number of hidden layers
+	size_t np; // total number of parameters (weights and biases)
 	float eta; // learning rate
 	float (*f)(float); // activation function
 	float (*df)(float); // derivative of the activation function
@@ -14,6 +15,10 @@ typedef struct {
 	float** B; // vectors of biases
 	float** W; // matrices of weights arranged in row-major order
 	float* work; // workspace memory
+	int itermax;// maximum number of iterations.
+	float tol; // relative termination tolerance
+	float rho; // initial damping factor
+	float mu; // damping adjustment factor
 } mlpnet;
 
 #ifdef MLPNET_USE_VARIADIC
@@ -55,5 +60,19 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y);
 // elements in row-major order. The function also
 // updates Y by evaluating the network at x.
 void mlpnet_jacobian(mlpnet* net, const float* x, float* J);
+
+// Train the MLP neural network by Levenberg-Marquardt
+// algorithm. X and Y are the array of training inputs and
+// outputs, respectively: each row must correspond to one
+// observation. The total number of observations is n.
+// The array work is the workspace memory. If this is a null
+// pointer, the workspace memory is automatically allocated
+// by the function. Otherwise, the workspace memory must be
+// provided by the caller, and work must have a minimum length
+// of 2 * (m * n * np) + np * np +  m * n + np, where m is the 
+// number of outputs and np is the total number of parameters.
+// The function returns the number of iterations taken.
+int mlpnet_train(mlpnet* net, size_t n,
+	const float* X, const float* Y, float* work);
 
 #endif

@@ -1,4 +1,5 @@
 #include "mlpnet.h"
+#include "detectum.h"
 #include <stdlib.h>
 #include <math.h>
 
@@ -24,26 +25,54 @@ static float randn(void)
 
 int mlpnet_init(mlpnet* net, size_t* sz, size_t nh)
 {
-	size_t i, k, work_len = sz[nh + 1];
+	size_t i, k, ny, np, dy, dp, work_len = sz[nh + 1];
+	float* y, * p;
 
 	net->sz = sz;
 	net->nh = nh;
 	net->eta = 1e-3f;
 	net->f = f_tanh;
 	net->df = df_tanh;
-	net->Y = calloc(nh + 1, sizeof(float*));
-	net->B = calloc(nh + 1, sizeof(float*));
-	net->W = calloc(nh + 1, sizeof(float*));
-	if (net->Y == 0 || net->B == 0 || net->W == 0) {
+	net->itermax = 1000;
+	net->tol = 1e-2f;
+	net->rho = 1e-3f;
+	net->mu = 2.0f;
+	np = 0;
+	ny = 0;
+	for (k = 0; k <= nh; k++) {
+		ny += sz[k + 1];
+		np += sz[k + 1] * (1 + sz[k]);
+	}
+	net->np = np;
+	y = calloc(ny, sizeof(float));
+	if (y == 0) {
 		return -1;
 	}
+	p = calloc(np, sizeof(float));
+	if (p == 0) {
+		return -1;
+	}
+	net->Y = calloc(nh + 1, sizeof(float*));
+	if (net->Y == 0) {
+		return -1;
+	}
+	net->B = calloc(nh + 1, sizeof(float*));
+	if (net->B == 0) {
+		return -1;
+	}
+	net->W = calloc(nh + 1, sizeof(float*));
+	if (net->W == 0) {
+		return -1;
+	}
+	dy = 0;
+	dp = 0;
 	for (k = 0; k <= nh; k++) {
-		net->Y[k] = calloc(sz[k + 1], sizeof(float));
-		net->B[k] = calloc(sz[k + 1], sizeof(float));
-		net->W[k] = calloc(sz[k] * sz[k + 1], sizeof(float));
-		if (net->Y[k] == 0 || net->B[k] == 0 || net->W[k] == 0) {
-			return -1;
-		}
+		net->Y[k] = y + dy;
+		dy += sz[k + 1];
+		net->B[k] = p + dp;
+		dp += sz[k + 1];
+		net->W[k] = p + dp;
+		dp += sz[k] * sz[k + 1];
 		for (i = 0; i < sz[k] * sz[k + 1]; i++) {
 			net->W[k][i] = randn() / sz[k];
 		}
@@ -62,13 +91,8 @@ int mlpnet_init(mlpnet* net, size_t* sz, size_t nh)
 
 void mlpnet_free(mlpnet* net)
 {
-	size_t k;
-
-	for (k = 0; k <= net->nh; k++) {
-		free(net->Y[k]);
-		free(net->B[k]);
-		free(net->W[k]);
-	}
+	free(net->Y[0]);
+	free(net->B[0]);
 	free(net->Y);
 	free(net->B);
 	free(net->W);
@@ -199,4 +223,146 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 			}
 		}
 	}
+}
+
+int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* work)
+{
+	size_t i, j, k, s0, s1, obs, out;
+	const size_t np = net->np;
+	const size_t m = net->sz[net->nh + 1];
+	const size_t mn = m * n;
+	float resnorm = INFINITY, resnorm_;
+	float rho_sr = sqrtf(net->rho * net->mu);
+	float mu_sr = sqrtf(net->mu);
+	float* W, * r, * J, * pJ, * p, * g, * D, * A_data, * b_data;
+	float fy, t, * tmp = net->work;
+	float gnorm, Jnorm;
+	int iter = 0;
+	Matrixf A, b, dp;
+
+	if (work) {
+		J = work;
+		b_data = J + mn * np;
+		A_data = b_data + mn + np;
+	}
+	else {
+		J = calloc(mn * np, sizeof(float));
+		if (J == 0) {
+			return -1;
+		}
+		b_data = calloc(mn + np, sizeof(float));
+		if (b_data == 0) {
+			return -1;
+		}
+		A_data = calloc(mn * np + np * np, sizeof(float));
+		if (A_data == 0) {
+			return -1;
+		}
+	}
+	r = b_data;
+	g = b_data + mn;
+	D = A_data + mn * np;
+	p = net->B[0];
+	while (iter < net->itermax) {
+		resnorm_ = resnorm;
+		for (i = 0, obs = 0; obs < n; obs++) {
+			mlpnet_eval(net, X + net->sz[0] * obs);
+			for (out = 0; out < m; out++, i++) {
+				r[i] = Y[m * obs + out] - net->Y[net->nh][out];
+			}
+		}
+		resnorm = normf(r, mn, 1);
+		if (net->mu > 1.0f && resnorm > resnorm_) { // reject the update
+			rho_sr *= net->mu;
+			for (i = 0; i < np; i++) {
+				p[i] -= b_data[i];
+			}
+			for (i = 0, obs = 0; obs < n; obs++) {
+				mlpnet_eval(net, X + net->sz[0] * obs);
+				for (out = 0; out < m; out++, i++) {
+					r[i] = Y[m * obs + out] - net->Y[net->nh][out];
+				}
+			}
+			resnorm = resnorm_;
+		}
+		else { // accept the update and compute the new Jacobian matrix
+			rho_sr /= mu_sr;
+			pJ = J + mn * np - 1;
+			for (obs = n; obs-- > 0;) {
+				mlpnet_eval(net, X + net->sz[0] * obs);
+				for (out = m; out-- > 0;) {
+					for (i = 0; i < m; i++) {
+						tmp[i] = 0;
+					}
+					tmp[out] = 1.0f;
+					for (k = net->nh + 1; k-- > 0;) {
+						s0 = net->sz[k];
+						s1 = net->sz[k + 1];
+						if (k > 0) {
+							W = net->W[k];
+							for (i = 0; i < s0; i++) {
+								t = 0;
+								for (j = 0; j < s1; j++, W++) {
+									t += tmp[j] * *W;
+								}
+								tmp[i + s1] = t * net->df(net->Y[k - 1][i]);
+							}
+						}
+						for (i = s0; i-- > 0;) {
+							fy = k ? net->f(net->Y[k - 1][i]) : X[net->sz[0] * obs + i];
+							for (j = s1; j-- > 0; pJ--) {
+								*pJ = tmp[j] * fy;
+							}
+						}
+						for (i = s1; i-- > 0; pJ--) {
+							*pJ = tmp[i];
+						}
+						if (k > 0) {
+							for (i = 0; i < s0; i++) {
+								tmp[i] = tmp[i + s1];
+							}
+						}
+					}
+				}
+			}
+			for (i = 0; i < np; i++) {
+				g[i] = 0;
+			}
+			for (j = 0; j < mn; j++) {
+				t = r[j];
+				pJ = J + j * np;
+				for (i = 0; i < np; i++) {
+					g[i] += pJ[i] * t;
+				}
+			}
+			gnorm = normf(g, np, 1);
+			Jnorm = normf(J, mn * np, 1);
+			if (gnorm < net->tol * (1.0f + Jnorm)) {
+				break;
+			}
+		}
+		for (i = 0; i < np; i++) {
+			g[i] = 0;
+		}
+		for (i = 0; i < mn * np; i++) {
+			A_data[i] = J[i];
+		}
+		for (i = 0; i < np * np; i++) {
+			D[i] = rho_sr * !(i % (np + 1));
+		}
+		matrixf_init(&A, mn + np, np, A_data, 1);
+		matrixf_init(&b, mn + np, 1, b_data, 0);
+		matrixf_init(&dp, np, 1, b_data, 0);
+		matrixf_solve_qr(&A, &b, &dp);
+		for (i = 0; i < np; i++) {
+			p[i] += b_data[i];
+		}
+		iter++;
+	}
+	if (work == 0) {
+		free(J);
+		free(b_data);
+		free(A_data);
+	}
+	return iter;
 }
