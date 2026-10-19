@@ -234,7 +234,8 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 	float resnorm = INFINITY, resnorm_;
 	float rho_sr = sqrtf(net->rho * net->mu);
 	float mu_sr = sqrtf(net->mu);
-	float* x, * Y_, * W, * r, * J, * pJ, * p, * g, * D, * A_data, * b_data;
+	const float* x, * y;
+	float* yh, * Y_, * W, * r, * J, * pJ, * p, * g, * D, * A_data, * b_data;
 	float fy, t, * tmp = net->work;
 	float gnorm, Jnorm;
 	int iter = 0;
@@ -266,9 +267,11 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 	while (iter < net->itermax) {
 		resnorm_ = resnorm;
 		for (i = 0, obs = 0; obs < n; obs++) {
-			mlpnet_eval(net, X + net->sz[0] * obs);
+			x = X + net->sz[0] * obs;
+			y = Y + m * obs;
+			yh = mlpnet_eval(net, x);
 			for (out = 0; out < m; out++, i++) {
-				r[i] = Y[m * obs + out] - net->Y[net->nh][out];
+				r[i] = y[out] - yh[out];
 			}
 		}
 		resnorm = normf(r, mn, 1);
@@ -278,9 +281,11 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 				p[i] -= A_data[i];
 			}
 			for (i = 0, obs = 0; obs < n; obs++) {
-				mlpnet_eval(net, X + net->sz[0] * obs);
+				x = X + net->sz[0] * obs;
+				y = Y + m * obs;
+				yh = mlpnet_eval(net, x);
 				for (out = 0; out < m; out++, i++) {
-					r[i] = Y[m * obs + out] - net->Y[net->nh][out];
+					r[i] = y[out] - yh[out];
 				}
 			}
 			resnorm = resnorm_;
