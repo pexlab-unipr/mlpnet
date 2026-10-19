@@ -127,14 +127,14 @@ float* mlpnet_eval(mlpnet* net, const float* x)
 float mlpnet_update(mlpnet* net, const float* x, const float* y)
 {
 	size_t i, j, k, s0, s1;
-	float fy, loss, t, * Y_, * B, * W, * work = net->work, * yh;
+	float fy, loss, t, * Y_, * B, * W, * tmp = net->work, * yh;
 	const float eta = net->eta;
 
 	yh = mlpnet_eval(net, x);
 	loss = 0;
 	for (i = 0; i < net->sz[net->nh + 1]; i++) {
-		work[i] = yh[i] - y[i];
-		loss += work[i] * work[i];
+		tmp[i] = yh[i] - y[i];
+		loss += tmp[i] * tmp[i];
 	}
 	for (k = net->nh + 1; k-- > 0;) {
 		s0 = net->sz[k];
@@ -146,24 +146,24 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
 			for (i = 0; i < s0; i++) {
 				t = 0;
 				for (j = 0; j < s1; j++, W++) {
-					t += work[j] * *W;
+					t += tmp[j] * *W;
 				}
-				work[i + s1] = t * net->df(Y_[i]);
+				tmp[i + s1] = t * net->df(Y_[i]);
 			}
 		}
 		W = net->W[k];
 		for (i = 0; i < s0; i++) {
 			fy = k ? net->f(Y_[i]) : x[i];
 			for (j = 0; j < s1; j++, W++) {
-				*W -= eta * work[j] * fy;
+				*W -= eta * tmp[j] * fy;
 			}
 		}
 		for (i = 0; i < s1; i++) {
-			B[i] -= eta * work[i];
+			B[i] -= eta * tmp[i];
 		}
 		if (k > 0) {
 			for (i = 0; i < s0; i++) {
-				work[i] = work[i + s1];
+				tmp[i] = tmp[i + s1];
 			}
 		}
 	}
@@ -173,7 +173,7 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
 void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 {
 	size_t i, j, k, out, s0, s1;
-	float t, * Y_, * W, * work = net->work;
+	float t, * Y_, * W, * tmp = net->work;
 
 	if (net->nh > 0) {
 		mlpnet_eval(net, x);
@@ -183,7 +183,7 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 			Y_ = net->Y[net->nh - 1];
 			W = net->W[net->nh];
 			for (i = 0; i < s0; i++) {
-				work[i] = W[i * s1 + out] * net->df(Y_[i]);
+				tmp[i] = W[i * s1 + out] * net->df(Y_[i]);
 			}
 			for (k = net->nh - 1; k > 0; k--) {
 				s0 = net->sz[k];
@@ -193,12 +193,12 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 				for (i = 0; i < s0; i++) {
 					t = 0;
 					for (j = 0; j < s1; j++, W++) {
-						t += work[j] * *W;
+						t += tmp[j] * *W;
 					}
-					work[i + s1] = t * net->df(Y_[i]);
+					tmp[i + s1] = t * net->df(Y_[i]);
 				}
 				for (i = 0; i < s0; i++) {
-					work[i] = work[i + s1];
+					tmp[i] = tmp[i + s1];
 				}
 			}
 			s0 = net->sz[0];
@@ -207,7 +207,7 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 			for (i = 0; i < s0; i++, J++) {
 				t = 0;
 				for (j = 0; j < s1; j++, W++) {
-					t += work[j] * *W;
+					t += tmp[j] * *W;
 				}
 				*J = t;
 			}
@@ -234,7 +234,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 	float resnorm = INFINITY, resnorm_;
 	float rho_sr = sqrtf(net->rho * net->mu);
 	float mu_sr = sqrtf(net->mu);
-	float* W, * r, * J, * pJ, * p, * g, * D, * A_data, * b_data;
+	float* x, * Y_, * W, * r, * J, * pJ, * p, * g, * D, * A_data, * b_data;
 	float fy, t, * tmp = net->work;
 	float gnorm, Jnorm;
 	int iter = 0;
@@ -289,7 +289,8 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			rho_sr /= mu_sr;
 			pJ = J + mn * np - 1;
 			for (obs = n; obs-- > 0;) {
-				mlpnet_eval(net, X + net->sz[0] * obs);
+				x = X + net->sz[0] * obs;
+				mlpnet_eval(net, x);
 				for (out = m; out-- > 0;) {
 					for (i = 0; i < m; i++) {
 						tmp[i] = 0;
@@ -298,6 +299,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 					for (k = net->nh + 1; k-- > 0;) {
 						s0 = net->sz[k];
 						s1 = net->sz[k + 1];
+						Y_ = net->Y[k - 1];
 						if (k > 0) {
 							W = net->W[k];
 							for (i = 0; i < s0; i++) {
@@ -305,11 +307,11 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 								for (j = 0; j < s1; j++, W++) {
 									t += tmp[j] * *W;
 								}
-								tmp[i + s1] = t * net->df(net->Y[k - 1][i]);
+								tmp[i + s1] = t * net->df(Y_[i]);
 							}
 						}
 						for (i = s0; i-- > 0;) {
-							fy = k ? net->f(net->Y[k - 1][i]) : X[net->sz[0] * obs + i];
+							fy = k ? net->f(Y_[i]) : x[i];
 							for (j = s1; j-- > 0; pJ--) {
 								*pJ = tmp[j] * fy;
 							}
