@@ -17,7 +17,7 @@ classdef mlpnet < handle
         itermax = 1000; % maximum number of iterations.
         tol = 1e-2; % relative termination tolerance
         rho = 1e-3; % initial damping factor
-        mu = 2; % damping adjustment factor
+        mu = 2; % damping adjustment factor (must be >= 1)
         solver = 'normal'; % linear solver: 'normal' or 'robust'
     end
 

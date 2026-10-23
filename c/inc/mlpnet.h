@@ -18,7 +18,7 @@ typedef struct {
 	int itermax;// maximum number of iterations.
 	float tol; // relative termination tolerance
 	float rho; // initial damping factor
-	float mu; // damping adjustment factor
+	float mu; // damping adjustment factor (must be >= 1)
 } mlpnet;
 
 #ifdef MLPNET_USE_VARIADIC
