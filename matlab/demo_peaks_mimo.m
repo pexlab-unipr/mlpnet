@@ -53,10 +53,10 @@ switch train_env
         fclose(fid);
         idx = 0;
         for k = 1:nn.nh+1
-            idx = idx(end)+1:idx(end)+sz(k+1);
+            idx = idx(end)+1:idx(end)+nn.sz(k+1);
             nn.B{k} = par(idx).';
-            idx = idx(end)+1:idx(end)+sz(k+1)*sz(k);
-            nn.W{k} = reshape(par(idx), sz(k+1), sz(k)).';
+            idx = idx(end)+1:idx(end)+nn.sz(k+1)*nn.sz(k);
+            nn.W{k} = reshape(par(idx), nn.sz(k+1), nn.sz(k)).';
         end
 end
 
