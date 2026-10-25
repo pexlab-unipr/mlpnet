@@ -72,7 +72,8 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J);
 // provided by the caller, and work must have a minimum 
 // length of (m * n + np) * (np + 2), where m is the number
 // of outputs and np is the total number of parameters.
-// The function returns the number of iterations taken.
+// If allocation fails, the function returns -1. Otherwise,
+// it returns the number of iterations taken.
 int mlpnet_train(mlpnet* net, size_t n,
 	const float* X, const float* Y, float* work);
 

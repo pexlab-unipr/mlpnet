@@ -231,10 +231,10 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 	const size_t np = net->np;
 	const size_t m = net->sz[net->nh + 1];
 	const size_t mn = m * n;
-	float r_norm = INFINITY, r_norm_, g_norm, J_norm;
+	float r_norm = INFINITY, r_norm_, g_norm, Jt_norm;
 	float fy, t, rho = net->rho * net->mu;
 	const float* x, * y;
-	float* yh, * Y_, * W, * par, * tmp = net->work;
+	float* yh, * Y_, * W, * p, * tmp = net->work;
 	float* g_data, * r_data, * r_data_, * Jt_data, * A_data, * b_data;
 	int iter = 0;
 	Matrixf g, r, Jt, A, b;
@@ -273,7 +273,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			return -1;
 		}
 	}
-	par = net->B[0];
+	p = net->B[0];
 	matrixf_init(&g, np, 1, g_data, 0);
 	matrixf_init(&r, mn, 1, r_data, 0);
 	matrixf_init(&Jt, np, mn, Jt_data, 0);
@@ -293,7 +293,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		if (net->mu > 1.0f && r_norm > r_norm_) { // reject the update
 			rho *= net->mu * net->mu;
 			for (i = 0; i < np; i++) {
-				par[i] -= b_data[i];
+				p[i] -= b_data[i];
 			}
 			for (i = 0; i < mn; i++) {
 				r_data[i] = r_data_[i];
@@ -347,8 +347,8 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			}
 			matrixf_multiply(&Jt, &r, &g, 1.0f, 0.0f, 0, 0);
 			g_norm = normf(g_data, np, 1);
-			J_norm = normf(Jt_data, mn * np, 1);
-			if (g_norm < net->tol * (1.0f + J_norm)) {
+			Jt_norm = normf(Jt_data, mn * np, 1);
+			if (g_norm < net->tol * (1.0f + Jt_norm)) {
 				break;
 			}
 		}
@@ -359,7 +359,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		}
 		matrixf_solve_chol(&A, &b);
 		for (i = 0; i < np; i++) {
-			par[i] += b_data[i];
+			p[i] += b_data[i];
 		}
 		iter++;
 	}
