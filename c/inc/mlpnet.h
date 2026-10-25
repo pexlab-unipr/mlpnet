@@ -62,14 +62,15 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y);
 void mlpnet_jacobian(mlpnet* net, const float* x, float* J);
 
 // Train the MLP neural network by Levenberg-Marquardt
-// algorithm. X and Y are the array of training inputs and
-// outputs, respectively: each row must correspond to one
-// observation. The total number of observations is n.
+// algorithm. X and Y are the arrays of training inputs and
+// outputs, respectively; their elements must be stored in 
+// row-major order. Each row of X and Y must correspond to 
+// one observation. The total number of observations is n.
 // The array work is the workspace memory. If this is a null
 // pointer, the workspace memory is automatically allocated
 // by the function. Otherwise, the workspace memory must be
-// provided by the caller, and work must have a minimum length
-// of m * n * (np + 1) + np * (np + 2), where m is the 
+// provided by the caller, and work must have a minimum 
+// length of m * n * (np + 1) + np * (np + 2), where m is the 
 // number of outputs and np is the total number of parameters.
 // The function returns the number of iterations taken.
 int mlpnet_train(mlpnet* net, size_t n,

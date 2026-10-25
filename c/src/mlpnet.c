@@ -231,50 +231,47 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 	const size_t np = net->np;
 	const size_t m = net->sz[net->nh + 1];
 	const size_t mn = m * n;
-	float resnorm = INFINITY, resnorm_;
-	float rho_sr = sqrtf(net->rho * net->mu);
-	float mu_sr = sqrtf(net->mu);
+	float resnorm = INFINITY, resnorm_, J_norm, b_norm;
+	float fy, t, rho = net->rho * net->mu, mu = net->mu;
 	const float* x, * y;
-	float* yh, * Y_, * W, * pJ, * p, * r;
-	float* Jt_data, * Jtr_data, * Jtr_data_copy, * JtJ_data;
-	float fy, t, * tmp = net->work;
-	float Jt_norm, Jtr_norm;
+	float* yh, * Y_, * W, * J, * p, * r, * tmp = net->work;
+	float* J_data, * A_data, * b_data, * b_data_copy;
 	int iter = 0;
-	Matrixf Jt, Jtr, JtJ;
+	Matrixf Jt, b, A;
 
 	if (work) {
 		r = work;
-		Jt_data = r + mn;
-		Jtr_data = Jt_data + mn * np;
-		Jtr_data_copy = Jtr_data + np;
-		JtJ_data = Jtr_data_copy + np;
+		J_data = r + mn;
+		A_data = J_data + mn * np;
+		b_data = A_data + np * np;
+		b_data_copy = b_data + np;
 	}
 	else {
 		r = calloc(mn, sizeof(float));
 		if (r == 0) {
 			return -1;
 		}
-		Jt_data = calloc(mn * np, sizeof(float));
-		if (Jt_data == 0) {
+		J_data = calloc(mn * np, sizeof(float));
+		if (J_data == 0) {
 			return -1;
 		}
-		Jtr_data = calloc(np, sizeof(float));
-		if (Jtr_data == 0) {
+		A_data = calloc(np * np, sizeof(float));
+		if (A_data == 0) {
 			return -1;
 		}
-		Jtr_data_copy = calloc(np, sizeof(float));
-		if (Jtr_data_copy == 0) {
+		b_data = calloc(np, sizeof(float));
+		if (b_data == 0) {
 			return -1;
 		}
-		JtJ_data = calloc(np * np, sizeof(float));
-		if (JtJ_data == 0) {
+		b_data_copy = calloc(np, sizeof(float));
+		if (b_data_copy == 0) {
 			return -1;
 		}
 	}
 	p = net->B[0];
-	matrixf_init(&Jt, np, mn, Jt_data, 0);
-	matrixf_init(&Jtr, np, 1, Jtr_data, 0);
-	matrixf_init(&JtJ, np, np, JtJ_data, 0);
+	matrixf_init(&Jt, np, mn, J_data, 0);
+	matrixf_init(&A, np, np, A_data, 0);
+	matrixf_init(&b, np, 1, b_data, 0);
 	while (iter < net->itermax) {
 		resnorm_ = resnorm;
 		for (i = 0, obs = 0; obs < n; obs++) {
@@ -286,10 +283,10 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			}
 		}
 		resnorm = normf(r, mn, 1);
-		if (net->mu > 1.0f && resnorm > resnorm_) { // reject the update
-			rho_sr *= net->mu;
+		if (mu > 1.0f && resnorm > resnorm_) { // reject the update
+			rho *= mu * mu;
 			for (i = 0; i < np; i++) {
-				p[i] -= JtJ_data[i];
+				p[i] -= b_data[i];
 			}
 			for (i = 0, obs = 0; obs < n; obs++) {
 				x = X + net->sz[0] * obs;
@@ -302,8 +299,8 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			resnorm = resnorm_;
 		}
 		else { // accept the update and compute the new Jacobian matrix
-			rho_sr /= mu_sr;
-			pJ = Jt_data + mn * np - 1;
+			rho /= mu;
+			J = J_data + mn * np - 1;
 			for (obs = n; obs-- > 0;) {
 				x = X + net->sz[0] * obs;
 				mlpnet_eval(net, x);
@@ -328,12 +325,12 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 						}
 						for (i = s0; i-- > 0;) {
 							fy = k ? net->f(Y_[i]) : x[i];
-							for (j = s1; j-- > 0; pJ--) {
-								*pJ = tmp[j] * fy;
+							for (j = s1; j-- > 0; J--) {
+								*J = tmp[j] * fy;
 							}
 						}
-						for (i = s1; i-- > 0; pJ--) {
-							*pJ = tmp[i];
+						for (i = s1; i-- > 0; J--) {
+							*J = tmp[i];
 						}
 						if (k > 0) {
 							for (i = 0; i < s0; i++) {
@@ -344,39 +341,38 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 				}
 			}
 			for (i = 0; i < np; i++) {
-				Jtr_data_copy[i] = 0;
+				b_data_copy[i] = 0;
 			}
 			for (j = 0; j < mn; j++) {
 				t = r[j];
-				pJ = Jt_data + j * np;
+				J = J_data + j * np;
 				for (i = 0; i < np; i++) {
-					Jtr_data_copy[i] += pJ[i] * t;
+					b_data_copy[i] += J[i] * t;
 				}
 			}
-			Jtr_norm = normf(Jtr_data_copy, np, 1);
-			Jt_norm = normf(Jt_data, mn * np, 1);
-			if (Jtr_norm < net->tol * (1.0f + Jt_norm)) {
+			b_norm = normf(b_data_copy, np, 1);
+			J_norm = normf(J_data, mn * np, 1);
+			if (b_norm < net->tol * (1.0f + J_norm)) {
 				break;
 			}
 		}
-		matrixf_multiply(&Jt, &Jt, &JtJ, 1.0f, 0.0f, 0, 1);
+		matrixf_multiply(&Jt, &Jt, &A, 1.0f, 0.0f, 0, 1);
 		for (i = 0; i < np; i++) {
-			at(&JtJ, i, i) += rho_sr * rho_sr;
-			Jtr_data[i] = Jtr_data_copy[i];
+			at(&A, i, i) += rho;
+			b_data[i] = b_data_copy[i];
 		}
-		matrixf_solve_chol(&JtJ, &Jtr);
+		matrixf_solve_chol(&A, &b);
 		for (i = 0; i < np; i++) {
-			JtJ_data[i] = Jtr_data[i];
-			p[i] += JtJ_data[i];
+			p[i] += b_data[i];
 		}
 		iter++;
 	}
 	if (work == 0) {
 		free(r);
-		free(Jt_data);
-		free(Jtr_data);
-		free(Jtr_data_copy);
-		free(JtJ_data);
+		free(J_data);
+		free(A_data);
+		free(b_data);
+		free(b_data_copy);
 	}
 	return iter;
 }

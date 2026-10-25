@@ -92,7 +92,7 @@ classdef mlpnet < handle
         end
         function [iter,resnorm] = train(net,X,Y)
             % Train the MLP neural network by Levenberg-Marquardt
-            % algorithm. X and Y are the array of training inputs and
+            % algorithm. X and Y are the arrays of training inputs and
             % outputs, respectively: each row must correspond to one
             % observation. The function returns the number of iterations
             % taken and the norm of the residual vector.
