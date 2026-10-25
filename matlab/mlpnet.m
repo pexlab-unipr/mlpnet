@@ -90,7 +90,7 @@ classdef mlpnet < handle
                 J = net.W{1}.';
             end
         end
-        function [iter,resnorm] = train(net,X,Y)
+        function [iter,r_norm] = train(net,X,Y)
             % Train the MLP neural network by Levenberg-Marquardt
             % algorithm. X and Y are the arrays of training inputs and
             % outputs, respectively: each row must correspond to one
@@ -99,18 +99,18 @@ classdef mlpnet < handle
             m = net.sz(end);
             n = size(Y,1);
             np = dot(net.sz(2:end), 1 + net.sz(1:end-1));
-            resnorm = Inf;
+            r_norm = Inf;
             rho_sr = sqrt(net.rho*net.mu);
             mu_sr = sqrt(net.mu);
             r = zeros(m,n);
             J = zeros(m*n,np);
             for iter = 1:net.itermax
-                resnorm_ = resnorm;
+                r_norm_ = r_norm;
                 for obs = 1:n
                     r(:,obs) = (Y(obs,:) - net.eval(X(obs,:))).';
                 end
-                resnorm = norm(r(:));
-                if net.mu > 1 && resnorm > resnorm_
+                r_norm = norm(r(:));
+                if net.mu > 1 && r_norm > r_norm_
                     rho_sr = rho_sr*net.mu;
                     row = 0;
                     for k = net.nh+1:-1:1
@@ -119,12 +119,11 @@ classdef mlpnet < handle
                         row = row(end)+1:row(end)+numel(net.W{k});
                         net.W{k} = net.W{k} - reshape(dp(row),size(net.W{k}));
                     end
-                    for obs = 1:n
-                        r(:,obs) = (Y(obs,:) - net.eval(X(obs,:))).';
-                    end
-                    resnorm = resnorm_;
+                    r = r_;
+                    r_norm = r_norm_;
                 else
                     rho_sr = rho_sr/mu_sr;
+                    r_ = r;
                     row = 0;
                     for obs = 1:n
                         net.eval(X(obs,:));

@@ -231,24 +231,33 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 	const size_t np = net->np;
 	const size_t m = net->sz[net->nh + 1];
 	const size_t mn = m * n;
-	float resnorm = INFINITY, resnorm_, J_norm, b_norm;
-	float fy, t, rho = net->rho * net->mu, mu = net->mu;
+	float r_norm = INFINITY, r_norm_, g_norm, J_norm;
+	float fy, t, rho = net->rho * net->mu;
 	const float* x, * y;
-	float* yh, * Y_, * W, * J, * p, * r, * tmp = net->work;
-	float* J_data, * A_data, * b_data, * b_data_copy;
+	float* yh, * Y_, * W, * J, * p, * g, * r, * r_, * tmp = net->work;
+	float* J_data, * A_data, * b_data;
 	int iter = 0;
 	Matrixf Jt, b, A;
 
 	if (work) {
-		r = work;
-		J_data = r + mn;
+		g = work;
+		r = g + np;
+		r_ = r + mn;
+		J_data = r_ + mn;
 		A_data = J_data + mn * np;
 		b_data = A_data + np * np;
-		b_data_copy = b_data + np;
 	}
 	else {
+		g = calloc(np, sizeof(float));
+		if (g == 0) {
+			return -1;
+		}
 		r = calloc(mn, sizeof(float));
 		if (r == 0) {
+			return -1;
+		}
+		r_ = calloc(mn, sizeof(float));
+		if (r_ == 0) {
 			return -1;
 		}
 		J_data = calloc(mn * np, sizeof(float));
@@ -263,17 +272,13 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		if (b_data == 0) {
 			return -1;
 		}
-		b_data_copy = calloc(np, sizeof(float));
-		if (b_data_copy == 0) {
-			return -1;
-		}
 	}
 	p = net->B[0];
 	matrixf_init(&Jt, np, mn, J_data, 0);
 	matrixf_init(&A, np, np, A_data, 0);
 	matrixf_init(&b, np, 1, b_data, 0);
 	while (iter < net->itermax) {
-		resnorm_ = resnorm;
+		r_norm_ = r_norm;
 		for (i = 0, obs = 0; obs < n; obs++) {
 			x = X + net->sz[0] * obs;
 			y = Y + m * obs;
@@ -282,24 +287,22 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 				r[i] = y[out] - yh[out];
 			}
 		}
-		resnorm = normf(r, mn, 1);
-		if (mu > 1.0f && resnorm > resnorm_) { // reject the update
-			rho *= mu * mu;
+		r_norm = normf(r, mn, 1);
+		if (net->mu > 1.0f && r_norm > r_norm_) { // reject the update
+			rho *= net->mu * net->mu;
 			for (i = 0; i < np; i++) {
 				p[i] -= b_data[i];
 			}
-			for (i = 0, obs = 0; obs < n; obs++) {
-				x = X + net->sz[0] * obs;
-				y = Y + m * obs;
-				yh = mlpnet_eval(net, x);
-				for (out = 0; out < m; out++, i++) {
-					r[i] = y[out] - yh[out];
-				}
+			for (i = 0; i < mn; i++) {
+				r[i] = r_[i];
 			}
-			resnorm = resnorm_;
+			r_norm = r_norm_;
 		}
 		else { // accept the update and compute the new Jacobian matrix
-			rho /= mu;
+			rho /= net->mu;
+			for (i = 0; i < mn; i++) {
+				r_[i] = r[i];
+			}
 			J = J_data + mn * np - 1;
 			for (obs = n; obs-- > 0;) {
 				x = X + net->sz[0] * obs;
@@ -341,25 +344,25 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 				}
 			}
 			for (i = 0; i < np; i++) {
-				b_data_copy[i] = 0;
+				g[i] = 0;
 			}
 			for (j = 0; j < mn; j++) {
 				t = r[j];
 				J = J_data + j * np;
 				for (i = 0; i < np; i++) {
-					b_data_copy[i] += J[i] * t;
+					g[i] += J[i] * t;
 				}
 			}
-			b_norm = normf(b_data_copy, np, 1);
+			g_norm = normf(g, np, 1);
 			J_norm = normf(J_data, mn * np, 1);
-			if (b_norm < net->tol * (1.0f + J_norm)) {
+			if (g_norm < net->tol * (1.0f + J_norm)) {
 				break;
 			}
 		}
 		matrixf_multiply(&Jt, &Jt, &A, 1.0f, 0.0f, 0, 1);
 		for (i = 0; i < np; i++) {
 			at(&A, i, i) += rho;
-			b_data[i] = b_data_copy[i];
+			b_data[i] = g[i];
 		}
 		matrixf_solve_chol(&A, &b);
 		for (i = 0; i < np; i++) {
@@ -368,11 +371,12 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		iter++;
 	}
 	if (work == 0) {
+		free(g);
 		free(r);
+		free(r_);
 		free(J_data);
 		free(A_data);
 		free(b_data);
-		free(b_data_copy);
 	}
 	return iter;
 }

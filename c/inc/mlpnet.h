@@ -70,8 +70,8 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J);
 // pointer, the workspace memory is automatically allocated
 // by the function. Otherwise, the workspace memory must be
 // provided by the caller, and work must have a minimum 
-// length of m * n * (np + 1) + np * (np + 2), where m is the 
-// number of outputs and np is the total number of parameters.
+// length of (m * n + np) * (np + 2), where m is the number
+// of outputs and np is the total number of parameters.
 // The function returns the number of iterations taken.
 int mlpnet_train(mlpnet* net, size_t n,
 	const float* X, const float* Y, float* work);
