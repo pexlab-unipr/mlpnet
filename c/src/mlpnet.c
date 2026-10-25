@@ -227,14 +227,14 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J)
 
 int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* work)
 {
-	size_t i, j, k, s0, s1, obs, out;
+	size_t i, j, k, q, s0, s1, obs, out;
 	const size_t np = net->np;
 	const size_t m = net->sz[net->nh + 1];
 	const size_t mn = m * n;
 	float r_norm = INFINITY, r_norm_, g_norm, J_norm;
 	float fy, t, rho = net->rho * net->mu;
 	const float* x, * y;
-	float* yh, * Y_, * W, * J, * p, * tmp = net->work;
+	float* yh, * Y_, * W, * par, * tmp = net->work;
 	float* g_data, * r_data, * r_data_, * Jt_data, * A_data, * b_data;
 	int iter = 0;
 	Matrixf g, r, Jt, A, b;
@@ -273,7 +273,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			return -1;
 		}
 	}
-	p = net->B[0];
+	par = net->B[0];
 	matrixf_init(&g, np, 1, g_data, 0);
 	matrixf_init(&r, mn, 1, r_data, 0);
 	matrixf_init(&Jt, np, mn, Jt_data, 0);
@@ -293,7 +293,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		if (net->mu > 1.0f && r_norm > r_norm_) { // reject the update
 			rho *= net->mu * net->mu;
 			for (i = 0; i < np; i++) {
-				p[i] -= b_data[i];
+				par[i] -= b_data[i];
 			}
 			for (i = 0; i < mn; i++) {
 				r_data[i] = r_data_[i];
@@ -305,7 +305,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 			for (i = 0; i < mn; i++) {
 				r_data_[i] = r_data[i];
 			}
-			J = Jt_data + mn * np - 1;
+			q = mn * np - 1;
 			for (obs = n; obs-- > 0;) {
 				x = X + net->sz[0] * obs;
 				mlpnet_eval(net, x);
@@ -330,12 +330,12 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 						}
 						for (i = s0; i-- > 0;) {
 							fy = k ? net->f(Y_[i]) : x[i];
-							for (j = s1; j-- > 0; J--) {
-								*J = tmp[j] * fy;
+							for (j = s1; j-- > 0; q--) {
+								Jt_data[q] = tmp[j] * fy;
 							}
 						}
-						for (i = s1; i-- > 0; J--) {
-							*J = tmp[i];
+						for (i = s1; i-- > 0; q--) {
+							Jt_data[q] = tmp[i];
 						}
 						if (k > 0) {
 							for (i = 0; i < s0; i++) {
@@ -359,7 +359,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
 		}
 		matrixf_solve_chol(&A, &b);
 		for (i = 0; i < np; i++) {
-			p[i] += b_data[i];
+			par[i] += b_data[i];
 		}
 		iter++;
 	}
