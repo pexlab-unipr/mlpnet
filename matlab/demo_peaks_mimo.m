@@ -92,66 +92,66 @@ subplot(1,3,1)
 surf(xg,yg,zg(:,:,1))
 hold on; grid on
 plot3(xt,yt,zt,'*r')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$z_1$','Interpreter','Latex','FontSize',fontsize);
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('z_1','FontSize',fontsize);
 
 subplot(1,3,2)
 surf(xg,yg,zg(:,:,2))
 hold on; grid on
 plot3(xt,yt,-zt,'*r')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$z_2$','Interpreter','Latex','FontSize',fontsize);
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('z_2','FontSize',fontsize);
 
 subplot(1,3,3)
 surf(xg,yg,zg(:,:,3))
 hold on; grid on
 plot3(xt,yt,zt*0.1,'*r')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$z_3$','Interpreter','Latex','FontSize',fontsize);
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('z_3','FontSize',fontsize);
 
 figure
 
 subplot(3,2,1)
 surf(xg,yg,J1g(:,:,1)); hold on;
 surf(xg,yg,dzg1dx,'FaceColor','none','EdgeColor','red')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$\partial z_1/\partial x$','Interpreter','Latex','FontSize',fontsize)
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('\partialz_1 / \partialx','FontSize',fontsize)
 
 subplot(3,2,2)
 surf(xg,yg,J1g(:,:,2)); hold on;
 surf(xg,yg,dzg1dy,'FaceColor','none','EdgeColor','red')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$\partial z_1/\partial y$','Interpreter','Latex','FontSize',fontsize)
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('\partialz_1 / \partialy','FontSize',fontsize)
 
 subplot(3,2,3)
 surf(xg,yg,J2g(:,:,1)); hold on;
 surf(xg,yg,dzg2dx,'FaceColor','none','EdgeColor','red')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$\partial z_2/\partial x$','Interpreter','Latex','FontSize',fontsize)
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('\partialz_2 / \partialx','FontSize',fontsize)
 
 subplot(3,2,4)
 surf(xg,yg,J2g(:,:,2)); hold on;
 surf(xg,yg,dzg2dy,'FaceColor','none','EdgeColor','red')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$\partial z_2/\partial y$','Interpreter','Latex','FontSize',fontsize)
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('\partialz_2 / \partialy','FontSize',fontsize)
 
 subplot(3,2,5)
 surf(xg,yg,J3g(:,:,1)); hold on;
 surf(xg,yg,dzg3dx,'FaceColor','none','EdgeColor','red')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$\partial z_3/\partial x$','Interpreter','Latex','FontSize',fontsize)
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('\partialz_3 / \partialx','FontSize',fontsize)
 
 subplot(3,2,6)
 surf(xg,yg,J3g(:,:,2)); hold on;
 surf(xg,yg,dzg3dy,'FaceColor','none','EdgeColor','red')
-xlabel('$x$','Interpreter','Latex','FontSize',fontsize);
-ylabel('$y$','Interpreter','Latex','FontSize',fontsize);
-zlabel('$\partial z_3/\partial y$','Interpreter','Latex','FontSize',fontsize)
+xlabel('x','FontSize',fontsize);
+ylabel('y','FontSize',fontsize);
+zlabel('\partialz_3 / \partialy','FontSize',fontsize)
