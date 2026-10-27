@@ -12,12 +12,12 @@ nn = mlpnet([2,10,10,10,3]);
 
 %% Train the network
 train_env = 'matlab'; % training environment
-train_algo = 'lma'; % algorithm used in MATLAB
+train_alg = 'lma'; % algorithm used in MATLAB
 
 switch train_env
     case 'matlab' % train here
         tic
-        switch train_algo
+        switch train_alg
             case 'sgd' % use stochastic gradient descent
                 for epoch = 1:1000
                     if ~mod(epoch,500); disp(epoch); end
@@ -92,6 +92,7 @@ subplot(1,3,1)
 surf(xg,yg,zg(:,:,1))
 hold on; grid on
 plot3(xt,yt,zt,'*r')
+legend('Fitting','Data','Location','northwest')
 xlabel('x','FontSize',fontsize);
 ylabel('y','FontSize',fontsize);
 zlabel('z_1','FontSize',fontsize);
@@ -117,6 +118,7 @@ figure
 subplot(3,2,1)
 surf(xg,yg,J1g(:,:,1)); hold on;
 surf(xg,yg,dzg1dx,'FaceColor','none','EdgeColor','red')
+legend('Network','Numerical','Location','northwest')
 xlabel('x','FontSize',fontsize);
 ylabel('y','FontSize',fontsize);
 zlabel('\partialz_1 / \partialx','FontSize',fontsize)
