@@ -16,6 +16,7 @@ train_alg = 'lma'; % algorithm used in MATLAB
 
 switch train_env
     case 'matlab' % train here
+        fprintf("Training...");
         tic
         switch train_alg
             case 'sgd' % use stochastic gradient descent
@@ -32,23 +33,24 @@ switch train_env
     case 'c' % train using C interface
         % Export the dataset
         folder = "../";
+        cmd = "../c/main_mimo_training";
 
-        fid = fopen(folder + "xt.bin",'w');
+        fid = fopen(strcat(folder,"xt.bin"),'w');
         fwrite(fid, xt, 'single');
         fclose(fid);
-        fid = fopen(folder + "yt.bin",'w');
+        fid = fopen(strcat(folder,"yt.bin"),'w');
         fwrite(fid, yt, 'single');
         fclose(fid);
-        fid = fopen(folder + "zt.bin",'w');
+        fid = fopen(strcat(folder,"zt.bin"),'w');
         fwrite(fid, zt, 'single');
         fclose(fid);
 
         % Train
-        fprintf("Run 'main_mimo_training' and press enter...\n");
-        pause()
+        fprintf("Running 'main_mimo_training'...\n");
+        system(cmd);
 
         % Load the parameters
-        fid = fopen(folder + "par.bin",'r');
+        fid = fopen(strcat(folder,"par.bin"),'r');
         par = fread(fid, inf, 'single');
         fclose(fid);
         idx = 0;
