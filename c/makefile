@@ -8,7 +8,7 @@ DETECTUM_DIR ?= ../../detectum
 OPTIONS ?=
 
 COMPILER = gcc
-CFLAGS = -Wall -Wextra $(OPTIONS)
+CFLAGS = -Wall -Wextra -Wpedantic $(OPTIONS)
 LFLAGS = -lm
 
 TARGET = $(MAIN)
