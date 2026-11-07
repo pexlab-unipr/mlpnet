@@ -15,12 +15,9 @@ TARGET = $(MAIN)
 SRC = src/mlpnet.c demo/$(MAIN).c $(DETECTUM_DIR)/src/detectum.c
 INC = -I inc -I $(DETECTUM_DIR)/inc
 
-.PHONY: all clean
+.PHONY: all
 
 all: $(TARGET)
 
 $(TARGET): $(SRC)
 	$(COMPILER) $(CFLAGS) $(INC) -o $@ $(SRC) $(LFLAGS)
-
-clean:
-	rm -f $(TARGET)
