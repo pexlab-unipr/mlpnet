@@ -127,7 +127,7 @@ float* mlpnet_eval(mlpnet* net, const float* x)
 float mlpnet_update(mlpnet* net, const float* x, const float* y)
 {
   size_t i, j, k, s0, s1;
-  float fy, loss, t, * Y_, * B, * W, * tmp = net->work, * yh;
+  float fy, loss, t, * Y_ = 0, * B, * W, * tmp = net->work, * yh;
   const float eta = net->eta;
 
   yh = mlpnet_eval(net, x);
@@ -139,9 +139,8 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
   for (k = net->nh + 1; k-- > 0;) {
     s0 = net->sz[k];
     s1 = net->sz[k + 1];
-    Y_ = net->Y[k - 1];
-    B = net->B[k];
     if (k > 0) {
+      Y_ = net->Y[k - 1];
       W = net->W[k];
       for (i = 0; i < s0; i++) {
         t = 0;
@@ -151,6 +150,7 @@ float mlpnet_update(mlpnet* net, const float* x, const float* y)
         tmp[i + s1] = t * net->df(Y_[i]);
       }
     }
+    B = net->B[k];
     W = net->W[k];
     for (i = 0; i < s0; i++) {
       fy = k ? net->f(Y_[i]) : x[i];
@@ -234,7 +234,7 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
   float r_norm = INFINITY, r_norm_, g_norm, Jt_norm;
   float fy, t, rho = net->rho * net->mu;
   const float* x, * y;
-  float* yh, * Y_, * W, * p, * tmp = net->work;
+  float* yh, * Y_ = 0, * W, * p, * tmp = net->work;
   float* g_data, * r_data, * r_data_, * Jt_data, * A_data, * b_data;
   int iter = 0;
   Matrixf g, r, Jt, A, b;
@@ -317,8 +317,8 @@ int mlpnet_train(mlpnet* net, size_t n, const float* X, const float* Y, float* w
           for (k = net->nh + 1; k-- > 0;) {
             s0 = net->sz[k];
             s1 = net->sz[k + 1];
-            Y_ = net->Y[k - 1];
             if (k > 0) {
+              Y_ = net->Y[k - 1];
               W = net->W[k];
               for (i = 0; i < s0; i++) {
                 t = 0;
