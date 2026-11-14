@@ -5,20 +5,20 @@
 
 // Multilayer perceptron (MLP) neural network
 typedef struct {
-	size_t* sz; // layer sizes, including input and output layers
-	size_t nh; // number of hidden layers
-	size_t np; // total number of parameters (weights and biases)
-	float eta; // learning rate
-	float (*f)(float); // activation function
-	float (*df)(float); // derivative of the activation function
-	float** Y; // output vectors for each layer
-	float** B; // vectors of biases
-	float** W; // matrices of weights arranged in row-major order
-	float* work; // workspace memory
-	int itermax;// maximum number of iterations.
-	float tol; // relative termination tolerance
-	float rho; // initial damping factor
-	float mu; // damping adjustment factor (must be >= 1)
+  size_t* sz; // layer sizes, including input and output layers
+  size_t nh; // number of hidden layers
+  size_t np; // total number of parameters (weights and biases)
+  float eta; // learning rate
+  float (*f)(float); // activation function
+  float (*df)(float); // derivative of the activation function
+  float** Y; // output vectors for each layer
+  float** B; // vectors of biases
+  float** W; // matrices of weights arranged in row-major order
+  float* work; // workspace memory
+  int itermax;// maximum number of iterations.
+  float tol; // relative termination tolerance
+  float rho; // initial damping factor
+  float mu; // damping adjustment factor (must be >= 1)
 } mlpnet;
 
 #ifdef MLPNET_USE_VARIADIC
@@ -75,6 +75,6 @@ void mlpnet_jacobian(mlpnet* net, const float* x, float* J);
 // If allocation fails, the function returns -1. Otherwise,
 // it returns the number of iterations taken.
 int mlpnet_train(mlpnet* net, size_t n,
-	const float* X, const float* Y, float* work);
+  const float* X, const float* Y, float* work);
 
 #endif

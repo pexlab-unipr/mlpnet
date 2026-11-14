@@ -29,31 +29,31 @@
 #include <time.h>
 static inline int tick(struct timespec* t0) {
 #ifdef _WIN32
-	if (timespec_get(t0, TIME_UTC) == TIME_UTC) return 1;
+  if (timespec_get(t0, TIME_UTC) == TIME_UTC) return 1;
 #else
-	if (clock_gettime(CLOCK_REALTIME, t0) == 0) return 1;
+  if (clock_gettime(CLOCK_REALTIME, t0) == 0) return 1;
 #endif
-	return 0;
+  return 0;
 }
 static inline double tock(struct timespec* t0) {
-	struct timespec tf = { 0 }; tick(&tf);
-	return ((tf.tv_sec - t0->tv_sec) + ((tf.tv_nsec - t0->tv_nsec) * 1e-9));
+  struct timespec tf = { 0 }; tick(&tf);
+  return ((tf.tv_sec - t0->tv_sec) + ((tf.tv_nsec - t0->tv_nsec) * 1e-9));
 }
 #endif
 
 static float peaks(float x, float y)
 {
-	return 3 * powf(1 - x, 2) * expf(-x * x - powf(y + 1, 2))
-		- 10 * (x / 5 - powf(x, 3) - powf(x, 5)) * expf(-x * x - y * y)
-		- expf(-powf(x + 1, 2) - y * y) / 3;
+  return 3 * powf(1 - x, 2) * expf(-x * x - powf(y + 1, 2))
+    - 10 * (x / 5 - powf(x, 3) - powf(x, 5)) * expf(-x * x - y * y)
+    - expf(-powf(x + 1, 2) - y * y) / 3;
 }
 
 static void export(float* data, size_t len, char* filename)
 {
-	FILE* data_file = fopen(filename, "wb");
+  FILE* data_file = fopen(filename, "wb");
 
-	fwrite(data, sizeof(float), len, data_file);
-	fclose(data_file);
+  fwrite(data, sizeof(float), len, data_file);
+  fclose(data_file);
 }
 
 #define N 50
@@ -62,121 +62,121 @@ static void export(float* data, size_t len, char* filename)
 #ifdef USE_RELU
 static float f_relu(float x)
 {
-	return x > 0 ? x : 0.0f;
+  return x > 0 ? x : 0.0f;
 }
 
 static float df_relu(float x)
 {
-	return x > 0 ? 1.0f : 0.0f;
+  return x > 0 ? 1.0f : 0.0f;
 }
 #endif
 
 int main()
 {
 #ifdef TICKTOCK
-	struct timespec t0;
+  struct timespec t0;
 #endif
-	int i, j, idx, iter;
+  int i, j, idx, iter;
 #ifndef MLPNET_USE_VARIADIC
-	size_t net_sz[] = { 2, 10, 10, 1 };
-	mlpnet net;
+  size_t net_sz[] = { 2, 10, 10, 1 };
+  mlpnet net;
 #endif
-	float alpha = 0.999f;
-	float loss, input[2] = { 0 }, * output;
-	float x_min, y_min, eta, z_, z, J[2];
-	float* xt = malloc(N * N * sizeof(float));
-	float* yt = malloc(N * N * sizeof(float));
-	float* zt = malloc(N * N * sizeof(float));
-	float* zh = malloc(N * N * sizeof(float));
+  float alpha = 0.999f;
+  float loss, input[2] = { 0 }, * output;
+  float x_min, y_min, eta, z_, z, J[2];
+  float* xt = malloc(N * N * sizeof(float));
+  float* yt = malloc(N * N * sizeof(float));
+  float* zt = malloc(N * N * sizeof(float));
+  float* zh = malloc(N * N * sizeof(float));
 
-	/* Generate the dataset */
-	for (j = 0; j < N; j++) {
-		for (i = 0; i < N; i++) {
-			xt[i + N * j] = 6.0f * (float)j / (N - 1) - 3.0f;
-			yt[i + N * j] = 6.0f * (float)i / (N - 1) - 3.0f;
-			zt[i + N * j] = peaks(xt[i + N * j], yt[i + N * j]);
-		}
-	}
+  /* Generate the dataset */
+  for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++) {
+      xt[i + N * j] = 6.0f * (float)j / (N - 1) - 3.0f;
+      yt[i + N * j] = 6.0f * (float)i / (N - 1) - 3.0f;
+      zt[i + N * j] = peaks(xt[i + N * j], yt[i + N * j]);
+    }
+  }
 
-	/* Intialize the network */
-	//srand(0);
+  /* Intialize the network */
+  //srand(0);
 #ifndef MLPNET_USE_VARIADIC
-	mlpnet_init(&net, net_sz, sizeof(net_sz) / sizeof(size_t) - 2);
+  mlpnet_init(&net, net_sz, sizeof(net_sz) / sizeof(size_t) - 2);
 #else
-	mlpnet(net, 2, 10, 10, 1);
+  mlpnet(net, 2, 10, 10, 1);
 #endif
 #ifdef USE_RELU
-	net.f = f_relu;
-	net.df = df_relu;
-	net.eta = 1e-4f;
+  net.f = f_relu;
+  net.df = df_relu;
+  net.eta = 1e-4f;
 #endif
 
-	/* Train the network */
-	printf("Network training\n\n   Loss\n");
-	iter = 0;
-	loss = 1.0f;
+  /* Train the network */
+  printf("Network training\n\n   Loss\n");
+  iter = 0;
+  loss = 1.0f;
 #ifdef TICKTOCK
-	tick(&t0);
+  tick(&t0);
 #endif
-	while (loss > 1e-2f && iter < 10000000) {
-		idx = (int)((float)(N * N - 1) * (float)rand() / (float)RAND_MAX);
-		input[0] = xt[idx] / 3.0f;
-		input[1] = yt[idx] / 3.0f;
-		output = &zt[idx];
-		loss = alpha * loss + (1 - alpha) * mlpnet_update(&net, input, output);
-		if (!(++iter % 10000)) {
-			printf("%9.4e\n", loss);
-		}
-	}
-	printf("\nTotal number of iterations: %d\nFinal loss: %9.4e\n", iter, loss);
+  while (loss > 1e-2f && iter < 10000000) {
+    idx = (int)((float)(N * N - 1) * (float)rand() / (float)RAND_MAX);
+    input[0] = xt[idx] / 3.0f;
+    input[1] = yt[idx] / 3.0f;
+    output = &zt[idx];
+    loss = alpha * loss + (1 - alpha) * mlpnet_update(&net, input, output);
+    if (!(++iter % 10000)) {
+      printf("%9.4e\n", loss);
+    }
+  }
+  printf("\nTotal number of iterations: %d\nFinal loss: %9.4e\n", iter, loss);
 #ifdef TICKTOCK
-	printf("Elapsed time: %f s\n", tock(&t0));
+  printf("Elapsed time: %f s\n", tock(&t0));
 #endif
 
-	/* Evaluate the network */
-	for (j = 0; j < N; j++) {
-		for (i = 0; i < N; i++) {
-			input[0] = xt[i + N * j] / 3.0f;
-			input[1] = yt[i + N * j] / 3.0f;
-			output = mlpnet_eval(&net, input);
-			zh[i + N * j] = *output;
-		}
-	}
+  /* Evaluate the network */
+  for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++) {
+      input[0] = xt[i + N * j] / 3.0f;
+      input[1] = yt[i + N * j] / 3.0f;
+      output = mlpnet_eval(&net, input);
+      zh[i + N * j] = *output;
+    }
+  }
 
-	/* Export data */
-	export(xt, N * N, "../xt.bin");
-	export(yt, N * N, "../yt.bin");
-	export(zt, N * N, "../zt.bin");
-	export(zh, N * N, "../zh.bin");
+  /* Export data */
+  export(xt, N * N, "../xt.bin");
+  export(yt, N * N, "../yt.bin");
+  export(zt, N * N, "../zt.bin");
+  export(zh, N * N, "../zh.bin");
 
-	/* Find the minimum of the peaks function */
-	x_min = -0.7f; // starting point
-	y_min = -0.9f; // starting point
-	eta = 1e-5f;
-	z_ = 1.0f;
-	z = 0;
-	iter = 0;
-	printf("\nFunction minimization\n");
-	printf("\n\tx\ty\tz");
-	while (fabsf(z - z_) > 1e-8f && iter < 10000) {
-		z_ = z;
-		input[0] = x_min / 3.0f;
-		input[1] = y_min / 3.0f;
-		mlpnet_jacobian(&net, input, J);
-		z = *net.Y[net.nh];
-		if (!(++iter % 100)) {
-			printf("\n%9.4g %9.4g %9.4g", x_min, y_min, z);
-		}
-		x_min -= eta * J[0];
-		y_min -= eta * J[1];
-	}
-	printf("\n");
+  /* Find the minimum of the peaks function */
+  x_min = -0.7f; // starting point
+  y_min = -0.9f; // starting point
+  eta = 1e-5f;
+  z_ = 1.0f;
+  z = 0;
+  iter = 0;
+  printf("\nFunction minimization\n");
+  printf("\n\tx\ty\tz");
+  while (fabsf(z - z_) > 1e-8f && iter < 10000) {
+    z_ = z;
+    input[0] = x_min / 3.0f;
+    input[1] = y_min / 3.0f;
+    mlpnet_jacobian(&net, input, J);
+    z = *net.Y[net.nh];
+    if (!(++iter % 100)) {
+      printf("\n%9.4g %9.4g %9.4g", x_min, y_min, z);
+    }
+    x_min -= eta * J[0];
+    y_min -= eta * J[1];
+  }
+  printf("\n");
 
-	/* Free the memory */
-	mlpnet_free(&net);
-	free(xt);
-	free(yt);
-	free(zt);
-	free(zh);
-	return 0;
+  /* Free the memory */
+  mlpnet_free(&net);
+  free(xt);
+  free(yt);
+  free(zt);
+  free(zh);
+  return 0;
 }
