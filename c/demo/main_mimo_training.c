@@ -21,7 +21,7 @@ static inline double tock(struct timespec* t0) {
 
 #define n 1000
 
-int main()
+int main(void)
 {
   FILE* xt_file = fopen("../xt.bin", "rb");
   FILE* yt_file = fopen("../yt.bin", "rb");

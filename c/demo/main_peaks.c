@@ -71,7 +71,7 @@ static float df_relu(float x)
 }
 #endif
 
-int main()
+int main(void)
 {
 #ifdef TICKTOCK
   struct timespec t0;
