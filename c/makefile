@@ -1,18 +1,17 @@
-# Name of the main file
-MAIN ?= main_peaks
+# Name of the executable
+TARGET ?= main_peaks
 
 # Directory where DeTecTUM is located
 DETECTUM_DIR ?= ../../detectum
 
-# Addition compiler options (e.g. OPTIONS="-O3 -fopt-info-vec=vec.log")
-OPTIONS ?=
+# Addition compiler flags (e.g. EXTRA_CFLAGS="-O3 -fopt-info-vec=vec.log")
+EXTRA_CFLAGS ?=
 
-COMPILER = gcc
-CFLAGS = -Wall -Wextra -Wpedantic $(OPTIONS)
+CC = gcc
+CFLAGS = -Wall -Wextra -Wpedantic $(EXTRA_CFLAGS)
 LFLAGS = -lm
 
-TARGET = $(MAIN)
-SRC = src/mlpnet.c demo/$(MAIN).c $(DETECTUM_DIR)/src/detectum.c
+SRC = $(DETECTUM_DIR)/src/detectum.c src/mlpnet.c demo/$(TARGET).c
 INC = -I inc -I $(DETECTUM_DIR)/inc
 
 .PHONY: all
@@ -20,4 +19,4 @@ INC = -I inc -I $(DETECTUM_DIR)/inc
 all: $(TARGET)
 
 $(TARGET): $(SRC)
-	$(COMPILER) $(CFLAGS) $(INC) -o $@ $(SRC) $(LFLAGS)
+	$(CC) $(CFLAGS) $(INC) $(SRC) $(LFLAGS) -o $@
