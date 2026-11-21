@@ -4,7 +4,7 @@ TARGET ?= main_peaks
 # Directory where DeTecTUM is located
 DETECTUM_DIR ?= ../../detectum
 
-# Addition compiler flags (e.g. EXTRA_CFLAGS="-O3 -fopt-info-vec=vec.log")
+# Additional compiler flags (e.g. EXTRA_CFLAGS="-O3 -fopt-info-vec=vec.log")
 EXTRA_CFLAGS ?=
 
 CC = gcc
